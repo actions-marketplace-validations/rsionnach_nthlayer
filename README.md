@@ -36,6 +36,7 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
+    <li><a href="#-live-demo">🌐 Live Demo</a></li>
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
@@ -60,6 +61,50 @@
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
+
+---
+
+## 🌐 Live Demo
+
+**See NthLayer-generated observability in action:**
+
+[![Live Dashboard](https://img.shields.io/badge/Live-Dashboard-blue?logo=grafana&style=for-the-badge)](https://yourorg.grafana.net/public-dashboards/abc123)
+[![Interactive Demo](https://img.shields.io/badge/Try-Interactive%20Demo-green?style=for-the-badge)](https://yourorg.github.io/nthlayer)
+
+### Quick Preview
+
+Want to see what NthLayer generates? We have a live demo running 24/7 with real metrics:
+
+<details>
+<summary>📊 Click to view live embedded dashboard</summary>
+
+<br>
+
+> **Note:** Once you deploy the demo following [demo/ZERO_COST_SETUP.md](demo/ZERO_COST_SETUP.md), replace the URL below with your Grafana Cloud public dashboard URL.
+
+```html
+<iframe 
+    src="https://yourorg.grafana.net/public-dashboards/abc123" 
+    width="100%" 
+    height="600px"
+    frameborder="0">
+</iframe>
+```
+
+*Live dashboard showing auto-generated SLO tracking, health metrics, and technology-specific monitoring. Data updates in real-time from our demo app running on Fly.io.*
+
+</details>
+
+**🎮 Explore More:**
+- [**Interactive Demo Site**](https://yourorg.github.io/nthlayer) - Step-by-step walkthrough with live dashboards
+- [**Demo App API**](https://nthlayer-demo.fly.dev) - Live metrics generator
+- [**Example Generated Configs**](./generated/examples/) - See what NthLayer creates
+
+**💰 Host Your Own Demo:**
+- [**Zero-Cost Setup**](demo/ZERO_COST_SETUP.md) - Free tier (Grafana Cloud + Fly.io + GitHub Pages) - $0/month
+- [**Low-Cost Setup**](demo/hetzner/LOW_COST_SETUP.md) - Full stack (Hetzner VPS) - €3.49/month
+
+---
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project

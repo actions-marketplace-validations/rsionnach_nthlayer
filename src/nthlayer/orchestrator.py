@@ -438,11 +438,17 @@ class ServiceOrchestrator:
         """
         import json
         import asyncio
+        import os
         from nthlayer.providers.grafana import GrafanaProvider
-        from nthlayer.config import settings
+        from pydantic_settings import BaseSettings
+        
+        # Get configuration directly from environment (simpler and more reliable)
+        grafana_url = os.getenv('NTHLAYER_GRAFANA_URL')
+        grafana_api_key = os.getenv('NTHLAYER_GRAFANA_API_KEY')
+        grafana_org_id = int(os.getenv('NTHLAYER_GRAFANA_ORG_ID', '1'))
         
         # Check if Grafana is configured
-        if not settings.grafana_url or not settings.grafana_api_key:
+        if not grafana_url or not grafana_api_key:
             print("⚠️  Grafana not configured. Skipping push to Grafana.")
             print("   Set NTHLAYER_GRAFANA_URL and NTHLAYER_GRAFANA_API_KEY to enable auto-push.")
             return
@@ -460,16 +466,19 @@ class ServiceOrchestrator:
         
         # Create Grafana provider
         provider = GrafanaProvider(
-            url=settings.grafana_url,
-            token=settings.grafana_api_key,
-            org_id=settings.grafana_org_id
+            url=grafana_url,
+            token=grafana_api_key,
+            org_id=grafana_org_id
         )
         
         # Get dashboard UID from JSON
         dashboard_uid = dashboard_json.get("uid", self.service_name)
         
         # Push dashboard
-        async def push():
+        print(f"📤 Pushing dashboard to Grafana...")
+        
+        async def do_push():
+            """Async function to push dashboard."""
             dashboard_resource = provider.dashboard(dashboard_uid)
             await dashboard_resource.apply({
                 "dashboard": dashboard_json,
@@ -478,10 +487,24 @@ class ServiceOrchestrator:
             })
         
         try:
-            asyncio.run(push())
-            print(f"✅ Dashboard pushed to Grafana: {settings.grafana_url}/d/{dashboard_uid}")
+            # Check if there's already an event loop running
+            try:
+                loop = asyncio.get_running_loop()
+                # If we're already in an async context, create a task
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    future = pool.submit(asyncio.run, do_push())
+                    future.result()
+            except RuntimeError:
+                # No loop running, safe to use asyncio.run()
+                asyncio.run(do_push())
+            
+            print(f"✅ Dashboard pushed to Grafana: {grafana_url}/d/{dashboard_uid}")
         except Exception as e:
             print(f"⚠️  Failed to push dashboard to Grafana: {e}")
+            print(f"   Error type: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
             print("   Dashboard file saved locally, you can import manually.")
     
     def _generate_recording_rules(self) -> int:

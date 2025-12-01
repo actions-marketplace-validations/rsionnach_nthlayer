@@ -34,9 +34,15 @@ class Settings(BaseSettings):
     # PagerDuty
     pagerduty_api_key: str | None = None
     
+    # Grafana API configuration (for auto-push dashboards)
+    grafana_url: str | None = None
+    grafana_api_key: str | None = None
+    grafana_org_id: int | None = None
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        env_prefix = "NTHLAYER_"
 
 
 @lru_cache

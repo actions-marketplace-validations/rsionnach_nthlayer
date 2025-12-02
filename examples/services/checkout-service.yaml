@@ -66,6 +66,7 @@ resources:
           region: us-east-1
 
   - kind: Observability
+    name: observability
     spec:
       metrics:
         - checkout_started_total

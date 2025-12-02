@@ -71,6 +71,7 @@ resources:
           type: sms
 
   - kind: Observability
+    name: observability
     spec:
       metrics:
         - notifications_sent_total

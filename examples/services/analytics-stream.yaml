@@ -73,6 +73,7 @@ resources:
           type: storage
 
   - kind: Observability
+    name: observability
     spec:
       metrics:
         - events_processed_total

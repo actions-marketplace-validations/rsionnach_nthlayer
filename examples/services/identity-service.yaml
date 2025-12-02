@@ -68,6 +68,7 @@ resources:
           type: email
 
   - kind: Observability
+    name: observability
     spec:
       metrics:
         - login_attempts_total

@@ -315,6 +315,18 @@ def simulate_payment_api():
     pg_blks_read.labels(service=svc, datname='payments').set(random.randint(1000, 2000))
     pg_query_duration.labels(service=svc).observe(random.uniform(0.001, 0.05))
     
+    # Additional PostgreSQL metrics
+    pg_activity_count.labels(service=svc, state='active').set(random.randint(2, 12))
+    pg_activity_count.labels(service=svc, state='idle').set(random.randint(5, 25))
+    pg_activity_count.labels(service=svc, state='idle_in_transaction').set(random.randint(0, 3))
+    pg_xact_commit.labels(service=svc, datname='payments').set(random.randint(10000, 100000))
+    pg_xact_rollback.labels(service=svc, datname='payments').set(random.randint(10, 200))
+    pg_database_size.labels(service=svc, datname='payments').set(random.randint(2_000_000_000, 15_000_000_000))
+    pg_deadlocks.labels(service=svc, datname='payments').set(random.randint(0, 5))
+    pg_replication_lag.labels(service=svc).set(random.uniform(0.0, 3.0))
+    for table in ['users', 'orders', 'sessions', 'audit_log']:
+        pg_dead_tuples.labels(service=svc, schemaname='public', relname=table).set(random.randint(100, 15000))
+    
     # Redis
     cache_hits.labels(service=svc).inc(random.randint(80, 120))
     cache_misses.labels(service=svc).inc(random.randint(5, 15))
@@ -456,6 +468,18 @@ def simulate_identity_service():
     pg_blks_read.labels(service=svc, datname='identity').set(random.randint(1000, 3000))
     # PostgreSQL query performance
     pg_query_time.labels(service=svc).observe(random.uniform(0.001, 0.02))
+    
+    # Additional PostgreSQL metrics
+    pg_activity_count.labels(service=svc, state='active').set(random.randint(2, 12))
+    pg_activity_count.labels(service=svc, state='idle').set(random.randint(5, 25))
+    pg_activity_count.labels(service=svc, state='idle_in_transaction').set(random.randint(0, 3))
+    pg_xact_commit.labels(service=svc, datname='identity').set(random.randint(10000, 100000))
+    pg_xact_rollback.labels(service=svc, datname='identity').set(random.randint(10, 200))
+    pg_database_size.labels(service=svc, datname='identity').set(random.randint(2_000_000_000, 15_000_000_000))
+    pg_deadlocks.labels(service=svc, datname='identity').set(random.randint(0, 5))
+    pg_replication_lag.labels(service=svc).set(random.uniform(0.0, 3.0))
+    for table in ['users', 'orders', 'sessions', 'audit_log']:
+        pg_dead_tuples.labels(service=svc, schemaname='public', relname=table).set(random.randint(100, 15000))
     
     # Redis (session cache)
     redis_keys.labels(service=svc, db='0').set(random.randint(1000, 5000))

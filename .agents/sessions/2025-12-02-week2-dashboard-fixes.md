@@ -273,3 +273,39 @@ If dashboards still show issues:
 3. **Template variables are not optional** - Queries silently fail without them
 4. **Systematic fixes beat manual edits** - Scripts ensure consistency across dashboards
 5. **Remove broken panels rather than leave them** - Better UX to show only working panels
+
+
+### 8. Template Variables Missing AGAIN + Wrong SLO Queries (15:30-16:00)
+
+**User report**: "checkout-service availability, latency panels have no data. Actually all dashboards have this issue."
+
+**Investigation**:
+```
+checkout-service: ❌ NO TEMPLATE VARIABLES
+identity-service: ❌ NO TEMPLATE VARIABLES  
+payment-api: ✅ Has template variables
+```
+
+**Additional Discovery**: SLO queries in checkout-service and identity-service were WRONG:
+```
+availability: sum(rate(http_requests_total{...}[5m]))  ← WRONG! Just shows request rate
+latency-p95: sum(rate(http_requests_total{...}[5m]))   ← WRONG! Should be histogram_quantile
+```
+
+Should be:
+```
+availability: sum(rate(...status!~"5..")) / sum(rate(...)) * 100
+latency-p95: histogram_quantile(0.95, rate(...bucket...))
+```
+
+**Root Cause**: Dashboard regeneration loses template variables and SLO queries get overwritten with generic queries.
+
+**Fix**:
+1. Added template variables to checkout-service and identity-service
+2. Fixed SLO queries to use correct formulas:
+   - availability: success_rate / total_rate * 100
+   - latency-p95: histogram_quantile(0.95, ...)
+   - latency-p99: histogram_quantile(0.99, ...)
+3. Pushed and verified in Grafana Cloud
+
+**Lesson**: Need to make template variables and SLO queries part of the generation process, not post-processing fixes.

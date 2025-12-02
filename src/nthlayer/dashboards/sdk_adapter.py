@@ -279,17 +279,17 @@ class SDKAdapter:
             # Build query based on SLO name/type
             # For availability SLOs (success rate)
             if "availability" in slo_name.lower() or "success" in slo_name.lower():
-                expr = f"(sum(rate(http_requests_total{{status=~\"2..\",service=\"$service\"}}[{time_window}])) / sum(rate(http_requests_total{{service=\"$service\"}}[{time_window}]))) * 100"
+                expr = f"sum(rate(http_requests_total{{service=\"$service\",status!~\"5..\"}}[{time_window}])) / sum(rate(http_requests_total{{service=\"$service\"}}[{time_window}])) * 100"
             # For latency SLOs (percentile)
             elif "latency" in slo_name.lower() or "p95" in slo_name.lower() or "p99" in slo_name.lower():
                 percentile = "0.95" if "p95" in slo_name.lower() else "0.99"
-                expr = f"histogram_quantile({percentile}, sum by (le) (rate(http_request_duration_seconds_bucket{{service=\"$service\"}}[{time_window}])))"
+                expr = f"histogram_quantile({percentile}, rate(http_request_duration_seconds_bucket{{service=\"$service\"}}[{time_window}])) * 1000"
             # For error rate SLOs
             elif "error" in slo_name.lower():
-                expr = f"(sum(rate(http_requests_total{{status=~\"5..\",service=\"$service\"}}[{time_window}])) / sum(rate(http_requests_total{{service=\"$service\"}}[{time_window}]))) * 100"
+                expr = f"sum(rate(http_requests_total{{service=\"$service\",status=~\"5..\"}}[{time_window}])) / sum(rate(http_requests_total{{service=\"$service\"}}[{time_window}])) * 100"
             else:
                 # Default: simple rate of http requests
-                expr = f"rate(http_requests_total{{service=\"$service\"}}[{time_window}])"
+                expr = f"sum(rate(http_requests_total{{service=\"$service\"}}[{time_window}]))"
         
         query = SDKAdapter.create_prometheus_query(
             expr=expr,

@@ -222,7 +222,8 @@ class DashboardBuilderSDK:
                 template = get_template(db_type)
                 if template and hasattr(template, 'get_panels'):
                     # Convert template panels to SDK panels
-                    template_panels = template.get_panels(self.context)
+                    # Pass service NAME not ServiceContext object!
+                    template_panels = template.get_panels(self.context.name)
                     
                     # Convert each panel to SDK format
                     for old_panel in template_panels:

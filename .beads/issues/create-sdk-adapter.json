@@ -1,0 +1,12 @@
+{
+  "id": "create-sdk-adapter",
+  "type": "task",
+  "title": "Create SDK adapter layer",
+  "description": "Build adapter to convert NthLayer abstractions to Foundation SDK builders. Handles ServiceContext → Dashboard, panel specs → panels, SLO → queries.",
+  "status": "in_progress",
+  "priority": "P0",
+  "parent": "week2-foundation-sdk",
+  "tags": ["adapter", "conversion", "sdk"],
+  "created_at": "2025-12-03T00:45:00Z",
+  "estimated_hours": 4
+}

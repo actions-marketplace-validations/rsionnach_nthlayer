@@ -130,20 +130,17 @@ class DashboardBuilderSDK:
                 objective = getattr(slo_spec, 'target', 99.9)
                 slo_query = getattr(slo_spec, 'query', '')
             
-            # Create query
+            # Create prometheus query
             if slo_query:
                 # Use provided query (substitute variables)
                 expr = slo_query.replace('${service}', '$service')
+                prom_query = self.adapter.create_prometheus_query(
+                    expr=expr,
+                    legend_format=slo_name
+                )
             else:
-                # Generate query from SLO type
-                query = self.adapter.convert_slo_to_query(slo_spec)
-                expr = query.internal_.expr
-            
-            # Create prometheus query
-            prom_query = self.adapter.create_prometheus_query(
-                expr=expr,
-                legend_format=slo_name
-            )
+                # Generate query from SLO type using adapter
+                prom_query = self.adapter.convert_slo_to_query(slo_spec)
             
             # Create panel
             panel = self.adapter.create_timeseries_panel(
@@ -221,10 +218,7 @@ class DashboardBuilderSDK:
                 template = get_template(db_type)
                 if template and hasattr(template, 'get_panels'):
                     # Convert template panels to SDK panels
-                    template_panels = template.get_panels(
-                        self.context,
-                        overview_only=not self.full_panels
-                    )
+                    template_panels = template.get_panels(self.context)
                     
                     # Convert each panel to SDK format
                     for old_panel in template_panels:

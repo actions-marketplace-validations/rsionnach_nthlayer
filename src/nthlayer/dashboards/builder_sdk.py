@@ -195,8 +195,11 @@ class DashboardBuilderSDK:
             if isinstance(slo_spec, dict):
                 slo_name = slo_spec.get('name', slo_resource.name or 'Unknown SLO')
                 objective = slo_spec.get('objective', 99.9)
-                indicator = slo_spec.get('indicator', {})
-                slo_query = indicator.get('query', '')
+                # Check for query in multiple places (spec.query or spec.indicator.query)
+                slo_query = slo_spec.get('query', '')
+                if not slo_query:
+                    indicator = slo_spec.get('indicator', {})
+                    slo_query = indicator.get('query', '')
             else:
                 slo_name = getattr(slo_spec, 'name', slo_resource.name or 'Unknown SLO')
                 objective = getattr(slo_spec, 'target', 99.9)
@@ -227,47 +230,129 @@ class DashboardBuilderSDK:
         return panels
     
     def _build_health_panels(self) -> List[Any]:
-        """Build service health panels using SDK."""
+        """Build service health panels using SDK.
+        
+        Uses service-type-appropriate metrics:
+        - api/web: HTTP request metrics
+        - stream: Event processing metrics
+        - worker: Job/notification processing metrics
+        """
         panels = []
+        service_type = self.context.type
         
-        # Request rate panel
-        rate_query = self.adapter.create_prometheus_query(
-            expr='sum(rate(http_requests_total{service="$service"}[5m]))',
-            legend_format="requests/sec"
-        )
-        rate_panel = self.adapter.create_timeseries_panel(
-            title="Request Rate",
-            description="Total requests per second",
-            queries=[rate_query],
-            unit="reqps"
-        )
-        panels.append(rate_panel)
-        
-        # Error rate panel
-        error_query = self.adapter.create_prometheus_query(
-            expr='sum(rate(http_requests_total{service="$service",status=~"5.."}[5m])) / sum(rate(http_requests_total{service="$service"}[5m])) * 100',
-            legend_format="error %"
-        )
-        error_panel = self.adapter.create_timeseries_panel(
-            title="Error Rate",
-            description="Percentage of requests returning 5xx",
-            queries=[error_query],
-            unit="percent"
-        )
-        panels.append(error_panel)
-        
-        # Latency panel (p95)
-        latency_query = self.adapter.create_prometheus_query(
-            expr='histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{service="$service"}[5m])))',
-            legend_format="p95 latency"
-        )
-        latency_panel = self.adapter.create_timeseries_panel(
-            title="Request Latency (p95)",
-            description="95th percentile request duration",
-            queries=[latency_query],
-            unit="s"
-        )
-        panels.append(latency_panel)
+        if service_type == 'stream':
+            # Stream processors use events_processed metrics
+            rate_query = self.adapter.create_prometheus_query(
+                expr='sum(rate(events_processed_total{service="$service"}[5m]))',
+                legend_format="events/sec"
+            )
+            rate_panel = self.adapter.create_timeseries_panel(
+                title="Event Rate",
+                description="Events processed per second",
+                queries=[rate_query],
+                unit="short"
+            )
+            panels.append(rate_panel)
+            
+            error_query = self.adapter.create_prometheus_query(
+                expr='sum(rate(events_processed_total{service="$service",status="error"}[5m])) / sum(rate(events_processed_total{service="$service"}[5m])) * 100',
+                legend_format="error %"
+            )
+            error_panel = self.adapter.create_timeseries_panel(
+                title="Error Rate",
+                description="Percentage of events failing",
+                queries=[error_query],
+                unit="percent"
+            )
+            panels.append(error_panel)
+            
+            latency_query = self.adapter.create_prometheus_query(
+                expr='histogram_quantile(0.95, sum by (le) (rate(event_processing_duration_seconds_bucket{service="$service"}[5m])))',
+                legend_format="p95 latency"
+            )
+            latency_panel = self.adapter.create_timeseries_panel(
+                title="Processing Latency (p95)",
+                description="95th percentile event processing duration",
+                queries=[latency_query],
+                unit="s"
+            )
+            panels.append(latency_panel)
+            
+        elif service_type == 'worker':
+            # Workers use notification/job metrics
+            rate_query = self.adapter.create_prometheus_query(
+                expr='sum(rate(notifications_sent_total{service="$service"}[5m]))',
+                legend_format="notifications/sec"
+            )
+            rate_panel = self.adapter.create_timeseries_panel(
+                title="Notification Rate",
+                description="Notifications sent per second",
+                queries=[rate_query],
+                unit="short"
+            )
+            panels.append(rate_panel)
+            
+            error_query = self.adapter.create_prometheus_query(
+                expr='sum(rate(notifications_sent_total{service="$service",status="error"}[5m])) / sum(rate(notifications_sent_total{service="$service"}[5m])) * 100',
+                legend_format="error %"
+            )
+            error_panel = self.adapter.create_timeseries_panel(
+                title="Error Rate",
+                description="Percentage of notifications failing",
+                queries=[error_query],
+                unit="percent"
+            )
+            panels.append(error_panel)
+            
+            latency_query = self.adapter.create_prometheus_query(
+                expr='histogram_quantile(0.95, sum by (le) (rate(notification_processing_duration_seconds_bucket{service="$service"}[5m])))',
+                legend_format="p95 latency"
+            )
+            latency_panel = self.adapter.create_timeseries_panel(
+                title="Processing Latency (p95)",
+                description="95th percentile notification processing duration",
+                queries=[latency_query],
+                unit="s"
+            )
+            panels.append(latency_panel)
+            
+        else:
+            # Default: HTTP-based services (api, web, service)
+            rate_query = self.adapter.create_prometheus_query(
+                expr='sum(rate(http_requests_total{service="$service"}[5m]))',
+                legend_format="requests/sec"
+            )
+            rate_panel = self.adapter.create_timeseries_panel(
+                title="Request Rate",
+                description="Total requests per second",
+                queries=[rate_query],
+                unit="reqps"
+            )
+            panels.append(rate_panel)
+            
+            error_query = self.adapter.create_prometheus_query(
+                expr='sum(rate(http_requests_total{service="$service",status=~"5.."}[5m])) / sum(rate(http_requests_total{service="$service"}[5m])) * 100',
+                legend_format="error %"
+            )
+            error_panel = self.adapter.create_timeseries_panel(
+                title="Error Rate",
+                description="Percentage of requests returning 5xx",
+                queries=[error_query],
+                unit="percent"
+            )
+            panels.append(error_panel)
+            
+            latency_query = self.adapter.create_prometheus_query(
+                expr='histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{service="$service"}[5m])))',
+                legend_format="p95 latency"
+            )
+            latency_panel = self.adapter.create_timeseries_panel(
+                title="Request Latency (p95)",
+                description="95th percentile request duration",
+                queries=[latency_query],
+                unit="s"
+            )
+            panels.append(latency_panel)
         
         return panels
     
@@ -387,12 +472,20 @@ class DashboardBuilderSDK:
     def _convert_panel_to_sdk(self, old_panel) -> Optional[Any]:
         """Convert a legacy Panel to SDK panel."""
         try:
-            # Create queries
+            # Create queries with proper RefId assignment
             queries = []
+            ref_id_counter = ord('A')  # Start with 'A'
             for target in getattr(old_panel, 'targets', []):
+                # Get ref_id from target, or generate one
+                target_ref_id = getattr(target, 'ref_id', None)
+                if not target_ref_id:
+                    target_ref_id = chr(ref_id_counter)
+                    ref_id_counter += 1
+                
                 q = self.adapter.create_prometheus_query(
                     expr=target.expr,
-                    legend_format=getattr(target, 'legend_format', '')
+                    legend_format=getattr(target, 'legend_format', ''),
+                    ref_id=target_ref_id
                 )
                 queries.append(q)
             

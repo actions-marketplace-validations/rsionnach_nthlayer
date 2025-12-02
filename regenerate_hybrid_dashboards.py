@@ -132,24 +132,82 @@ for svc in SERVICES:
         type=svc['type'],
     )
     
-    # Create resources
-    resources = [
-        Resource(
-            kind='SLO',
-            name='availability',
-            spec={'objective': 99.9, 'window': '30d'}
-        ),
-        Resource(
-            kind='SLO',
-            name='latency-p95',
-            spec={'objective': 99.0, 'percentile': 95, 'threshold_ms': 500}
-        ),
-        Resource(
-            kind='SLO',
-            name='latency-p99',
-            spec={'objective': 95.0, 'percentile': 99, 'threshold_ms': 1000}
-        ),
-    ]
+    # Create resources with service-type-appropriate SLO queries
+    service_type = svc['type']
+    
+    if service_type == 'stream':
+        # Stream processors use events_processed_total, not http_requests
+        slo_resources = [
+            Resource(
+                kind='SLO',
+                name='availability',
+                spec={
+                    'objective': 99.9, 
+                    'window': '30d',
+                    'query': 'sum(rate(events_processed_total{service="$service",status="success"}[5m])) / sum(rate(events_processed_total{service="$service"}[5m])) * 100'
+                }
+            ),
+            Resource(
+                kind='SLO',
+                name='processing-latency-p95',
+                spec={
+                    'objective': 99.0, 
+                    'query': 'histogram_quantile(0.95, sum by (le) (rate(event_processing_duration_seconds_bucket{service="$service"}[5m]))) * 1000'
+                }
+            ),
+        ]
+    elif service_type == 'worker':
+        # Workers use notifications_sent_total or jobs_processed_total
+        slo_resources = [
+            Resource(
+                kind='SLO',
+                name='availability',
+                spec={
+                    'objective': 99.9, 
+                    'window': '30d',
+                    'query': 'sum(rate(notifications_sent_total{service="$service",status="success"}[5m])) / sum(rate(notifications_sent_total{service="$service"}[5m])) * 100'
+                }
+            ),
+            Resource(
+                kind='SLO',
+                name='processing-latency-p95',
+                spec={
+                    'objective': 99.0, 
+                    'query': 'histogram_quantile(0.95, sum by (le) (rate(notification_processing_duration_seconds_bucket{service="$service"}[5m]))) * 1000'
+                }
+            ),
+        ]
+    else:
+        # API/web services use HTTP metrics
+        slo_resources = [
+            Resource(
+                kind='SLO',
+                name='availability',
+                spec={
+                    'objective': 99.9, 
+                    'window': '30d',
+                    'query': 'sum(rate(http_requests_total{service="$service",status!~"5.."}[5m])) / sum(rate(http_requests_total{service="$service"}[5m])) * 100'
+                }
+            ),
+            Resource(
+                kind='SLO',
+                name='latency-p95',
+                spec={
+                    'objective': 99.0, 
+                    'query': 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{service="$service"}[5m]))) * 1000'
+                }
+            ),
+            Resource(
+                kind='SLO',
+                name='latency-p99',
+                spec={
+                    'objective': 95.0, 
+                    'query': 'histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{service="$service"}[5m]))) * 1000'
+                }
+            ),
+        ]
+    
+    resources = slo_resources
     
     if svc['databases'] or svc['caches']:
         resources.append(Resource(

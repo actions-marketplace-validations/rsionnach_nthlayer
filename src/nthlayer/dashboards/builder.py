@@ -286,15 +286,37 @@ class DashboardBuilder:
         )
     
     def _build_generic_slo_panel(self, name: str, spec: dict) -> Panel:
-        """Build generic SLO panel (when type is unknown)."""
+        """Build generic SLO panel for custom SLO types."""
         objective = spec.get("objective", 99.9)
         
+        # Check if there's a custom metric query
+        indicators = spec.get("indicators", [])
+        if indicators and "metric" in indicators[0]:
+            metric_query = indicators[0]["metric"]
+            threshold = indicators[0].get("threshold", 100)
+            
+            return Panel(
+                title=f"{name.title()}",
+                panel_type="timeseries",
+                targets=[
+                    Target(
+                        expr=metric_query,
+                        legend_format="Current value",
+                    )
+                ],
+                description=f"SLO objective: {objective}% (threshold: {threshold})",
+                unit="short",
+                decimals=2,
+                grid_pos={"h": 8, "w": 6, "x": 0, "y": 0}
+            )
+        
+        # Fallback if no metric specified - just show objective
         return Panel(
             title=f"{name.title()}",
             panel_type="stat",
             targets=[
                 Target(
-                    expr=f'slo_objective{{service="$service",slo="{name}"}}',
+                    expr=f'{objective}',
                     legend_format="Objective",
                 )
             ],

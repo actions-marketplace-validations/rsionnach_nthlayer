@@ -23,7 +23,9 @@ print()
 slos = [r for r in resources if r.kind == "SLO"]
 print(f"2. Found {len(slos)} SLOs")
 for slo in slos:
-    print(f"   - {slo.spec.name}")
+    slo_spec = slo.spec
+    slo_name = slo_spec.get('name', 'Unknown') if isinstance(slo_spec, dict) else slo_spec.name
+    print(f"   - {slo_name}")
 print()
 
 # Create dashboard
@@ -37,14 +39,17 @@ print()
 print("4. Adding SLO panels...")
 for slo_resource in slos:
     slo_spec = slo_resource.spec
+    slo_name = slo_spec.get('name', 'Unknown') if isinstance(slo_spec, dict) else slo_spec.name
+    target = slo_spec.get('target', 99.9) if isinstance(slo_spec, dict) else slo_spec.target
+    
     query = adapter.convert_slo_to_query(slo_spec)
     panel = adapter.create_timeseries_panel(
-        title=slo_spec.name,
-        description=f"Target: {slo_spec.target}%",
+        title=slo_name,
+        description=f"Target: {target}%",
         queries=[query]
     )
     dash.with_panel(panel)
-    print(f"   ✅ Added panel: {slo_spec.name}")
+    print(f"   ✅ Added panel: {slo_name}")
 print()
 
 # Serialize

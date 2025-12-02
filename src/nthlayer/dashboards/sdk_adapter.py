@@ -251,38 +251,49 @@ class SDKAdapter:
         return sdk_panel
     
     @staticmethod
-    def convert_slo_to_query(slo: SLO, time_window: str = "5m") -> prometheus.Dataquery:
+    def convert_slo_to_query(slo: Any, time_window: str = "5m") -> prometheus.Dataquery:
         """
         Convert SLO specification to Prometheus query.
         
         Args:
-            slo: SLO model
+            slo: SLO model or dict spec
             time_window: Time window for rate calculations
             
         Returns:
             Prometheus query for SLO metric
         """
-        # Build query based on SLO type
-        metric = slo.metric
-        target = slo.target
-        
-        # For availability SLOs (success rate)
-        if "availability" in slo.name.lower() or "success" in slo.name.lower():
-            expr = f"(sum(rate({metric}{{status=~\"2..\",service=\"$service\"}}[{time_window}])) / sum(rate({metric}{{service=\"$service\"}}[{time_window}]))) * 100"
-        # For latency SLOs (percentile)
-        elif "latency" in slo.name.lower() or "p95" in slo.name.lower() or "p99" in slo.name.lower():
-            percentile = "0.95" if "p95" in slo.name.lower() else "0.99"
-            expr = f"histogram_quantile({percentile}, sum by (le) (rate({metric}_bucket{{service=\"$service\"}}[{time_window}])))"
-        # For error rate SLOs
-        elif "error" in slo.name.lower():
-            expr = f"(sum(rate({metric}{{status=~\"5..\",service=\"$service\"}}[{time_window}])) / sum(rate({metric}{{service=\"$service\"}}[{time_window}]))) * 100"
+        # Handle both SLO objects and dicts
+        if isinstance(slo, dict):
+            slo_name = slo.get('name', '')
+            slo_query = slo.get('query', '')
+            target = slo.get('target', 99.9)
         else:
-            # Default: simple rate
-            expr = f"rate({metric}{{service=\"$service\"}}[{time_window}])"
+            slo_name = slo.name
+            slo_query = getattr(slo, 'query', '')
+            target = slo.target
+        
+        # If SLO already has a query, use it
+        if slo_query:
+            expr = slo_query
+        else:
+            # Build query based on SLO name/type
+            # For availability SLOs (success rate)
+            if "availability" in slo_name.lower() or "success" in slo_name.lower():
+                expr = f"(sum(rate(http_requests_total{{status=~\"2..\",service=\"$service\"}}[{time_window}])) / sum(rate(http_requests_total{{service=\"$service\"}}[{time_window}]))) * 100"
+            # For latency SLOs (percentile)
+            elif "latency" in slo_name.lower() or "p95" in slo_name.lower() or "p99" in slo_name.lower():
+                percentile = "0.95" if "p95" in slo_name.lower() else "0.99"
+                expr = f"histogram_quantile({percentile}, sum by (le) (rate(http_request_duration_seconds_bucket{{service=\"$service\"}}[{time_window}])))"
+            # For error rate SLOs
+            elif "error" in slo_name.lower():
+                expr = f"(sum(rate(http_requests_total{{status=~\"5..\",service=\"$service\"}}[{time_window}])) / sum(rate(http_requests_total{{service=\"$service\"}}[{time_window}]))) * 100"
+            else:
+                # Default: simple rate of http requests
+                expr = f"rate(http_requests_total{{service=\"$service\"}}[{time_window}])"
         
         query = SDKAdapter.create_prometheus_query(
             expr=expr,
-            legend_format=slo.name
+            legend_format=slo_name
         )
         
         return query

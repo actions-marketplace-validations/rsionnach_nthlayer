@@ -8,6 +8,14 @@ from nthlayer.dashboards.templates.base import TechnologyTemplate
 class KafkaTemplate(TechnologyTemplate):
     """Template for Kafka panels."""
     
+    @property
+    def name(self) -> str:
+        return "kafka"
+    
+    @property
+    def display_name(self) -> str:
+        return "Apache Kafka"
+    
     def get_overview_panels(self, service_var: str = "$service") -> List[Panel]:
         """Get overview Kafka panels.
         

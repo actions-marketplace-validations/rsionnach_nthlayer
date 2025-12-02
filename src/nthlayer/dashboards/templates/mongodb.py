@@ -8,6 +8,14 @@ from nthlayer.dashboards.templates.base import TechnologyTemplate
 class MongoDBTemplate(TechnologyTemplate):
     """Template for MongoDB panels."""
     
+    @property
+    def name(self) -> str:
+        return "mongodb"
+    
+    @property
+    def display_name(self) -> str:
+        return "MongoDB"
+    
     def get_overview_panels(self, service_var: str = "$service") -> List[Panel]:
         """Get overview MongoDB panels.
         

@@ -309,3 +309,80 @@ latency-p95: histogram_quantile(0.95, rate(...bucket...))
 3. Pushed and verified in Grafana Cloud
 
 **Lesson**: Need to make template variables and SLO queries part of the generation process, not post-processing fixes.
+
+### 9. Beads Sync and Hybrid Model Spec (16:00-16:30)
+
+**User Request**: Create spec for proper hybrid model implementation and sync to beads.
+
+**Analysis Performed**:
+1. Reviewed `builder_sdk.py` - Found `_validate_panels()` is a stub with TODO
+2. Reviewed `validator.py` - Exists but never called during generation
+3. Reviewed templates - All use hardcoded metric names
+4. Searched for "intent" - No intent-based system exists
+5. Found recording rules system - Can be leveraged for synthesis
+
+**Root Cause Confirmed**:
+The hybrid model was PARTIALLY implemented but critical integration missing:
+- ✅ Discovery client exists
+- ✅ Validator exists  
+- ✅ SDK works
+- ❌ Templates hardcode metrics
+- ❌ No intent → metric resolution
+- ❌ Validation is a stub
+
+**Spec Created**: Enhanced Hybrid Model with:
+1. Intent Registry
+2. Metric Resolver
+3. Intent-Based Templates
+4. Guidance Panels (for missing metrics)
+5. Recording Rule Synthesis
+6. Custom Metric Override
+7. Validation CLI
+
+**Estimated Effort**: 17 hours
+
+**Beads Tracking**:
+- Created: Issue #11 - EPIC: Enhanced Hybrid Model
+- Updated: Issue #10 with session progress
+- Labels: epic, priority-critical, architecture
+
+## Session Summary
+
+**Duration**: ~6 hours
+**Starting State**: 42.5% panel success rate
+**Ending State**: ~95% panel success rate (immediate fixes)
+
+**Immediate Fixes Applied**:
+- Template variables added to all dashboards
+- SLO queries corrected (availability, latency)
+- Broken panels fixed (Cache Hits, Index Ratio, Connection Pool)
+- RefId conflicts resolved (22 panels)
+- Service-specific panels removed (HTTP from stream/worker, PostgreSQL from MySQL service)
+
+**Architectural Issue Identified**:
+Hybrid model not properly implemented. Need intent-based templates with metric discovery integration.
+
+**Next Steps**:
+1. Implement Enhanced Hybrid Model (Issue #11)
+2. Close Issue #10 after hybrid implementation
+3. Achieve 100% panel success rate for available metrics
+
+## Files Created/Modified This Session
+
+**New Files**:
+- `.agents/README.md` - Protocol overview
+- `.agents/sessions/2025-12-02-week2-dashboard-fixes.md` - This session log
+- `.agents/decisions/001-sdk-integration-approach.md` - SDK ADR
+- `.agents/knowledge/dashboard-troubleshooting.md` - Troubleshooting guide
+- `fix_all_dashboard_queries.py` - Systematic query fixer
+- `DASHBOARD_AUDIT_RESULTS.md` - Audit documentation
+
+**Modified Files**:
+- `generated/*/dashboard-sdk.json` - All dashboard fixes
+- `demo/fly-app/app.py` - Added PostgreSQL metrics
+
+## Commits This Session
+
+- `3c82705` - Implement agents.md protocol
+- `07cedbb` - Fix template variables and SLO queries
+- Various dashboard fix commits

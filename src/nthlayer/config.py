@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     grafana_api_key: str | None = None
     grafana_org_id: int | None = None
     
+    # Metric discovery configuration (for dashboard validation)
+    metrics_url: str | None = None
+    metrics_user: str | None = None
+    metrics_password: str | None = None
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

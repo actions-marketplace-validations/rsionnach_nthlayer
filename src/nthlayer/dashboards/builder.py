@@ -20,28 +20,48 @@ from nthlayer.dashboards.templates import get_template
 
 
 class DashboardBuilder:
-    """Builds Grafana dashboards from service specifications."""
+    """Builds Grafana dashboards from service specifications with metric validation."""
     
-    def __init__(self, service_context: ServiceContext, resources: List[Resource], full_panels: bool = False):
+    def __init__(
+        self,
+        service_context: ServiceContext,
+        resources: List[Resource],
+        full_panels: bool = False,
+        discovery_client=None,
+        enable_validation: bool = False
+    ):
         """Initialize builder with service context and resources.
         
         Args:
             service_context: Service metadata (name, team, tier, etc.)
             resources: List of resources (SLOs, dependencies, etc.)
             full_panels: If True, use all template panels; if False, use overview only
+            discovery_client: Optional MetricDiscoveryClient for validation
+            enable_validation: Whether to validate panels against discovered metrics
         """
         self.context = service_context
         self.resources = resources
         self.slo_resources = [r for r in resources if r.kind == "SLO"]
         self.dependency_resources = [r for r in resources if r.kind == "Dependencies"]
         self.full_panels = full_panels
+        self.validation_warnings = []
+        
+        # Import validator here to avoid circular imports
+        if enable_validation and discovery_client:
+            from nthlayer.dashboards.validator import DashboardValidator
+            self.validator = DashboardValidator(discovery_client)
+        else:
+            self.validator = None
     
     def build(self) -> Dashboard:
-        """Build complete dashboard.
+        """Build complete dashboard with optional metric validation.
         
         Returns:
             Dashboard object ready to be serialized to JSON
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Create dashboard
         dashboard = Dashboard(
             title=f"{self.context.name} - Service Dashboard",
@@ -61,24 +81,64 @@ class DashboardBuilder:
         # Add template variables
         dashboard.template_variables = self._build_template_variables()
         
+        # Collect all panels
+        all_panels = []
+        
         # Add SLO panels
         if self.slo_resources:
-            slo_row = Row(title="SLO Metrics")
-            slo_row.panels = self._build_slo_panels()
-            dashboard.rows.append(slo_row)
+            slo_panels = self._build_slo_panels()
+            all_panels.extend(slo_panels)
         
         # Add service health panels
-        health_row = Row(title="Service Health")
-        health_row.panels = self._build_health_panels()
-        dashboard.rows.append(health_row)
+        health_panels = self._build_health_panels()
+        all_panels.extend(health_panels)
         
         # Add technology-specific panels if dependencies exist
         if self.dependency_resources:
             tech_panels = self._build_technology_panels()
+            all_panels.extend(tech_panels)
+        
+        # VALIDATE PANELS if validator is enabled
+        if self.validator:
+            logger.info(f"Validating {len(all_panels)} panels for {self.context.name}...")
+            validated_panels, warnings = self.validator.validate_dashboard(
+                service_name=self.context.name,
+                panels=all_panels,
+                discover_metrics=True
+            )
+            
+            self.validation_warnings = warnings
+            
+            if warnings:
+                logger.warning(f"Dashboard validation found {len(warnings)} issues")
+            
+            removed_count = len(all_panels) - len(validated_panels)
+            if removed_count > 0:
+                logger.info(f"Removed {removed_count} panels with missing metrics")
+            
+            all_panels = validated_panels
+        
+        # Group panels into rows
+        if self.slo_resources and any(p.title.endswith('SLO') for p in all_panels):
+            slo_row = Row(title="SLO Metrics")
+            slo_row.panels = [p for p in all_panels if 'SLO' in p.title]
+            dashboard.rows.append(slo_row)
+            all_panels = [p for p in all_panels if 'SLO' not in p.title]
+        
+        if all_panels:
+            # Put remaining panels in appropriate rows
+            health_row = Row(title="Service Health")
+            health_row.panels = [p for p in all_panels if any(x in p.title.lower() for x in ['request', 'latency', 'error', 'cpu', 'memory'])]
+            if health_row.panels:
+                dashboard.rows.append(health_row)
+            
+            tech_panels = [p for p in all_panels if p not in health_row.panels]
             if tech_panels:
                 tech_row = Row(title="Dependencies")
                 tech_row.panels = tech_panels
                 dashboard.rows.append(tech_row)
+        
+        logger.info(f"Dashboard built with {sum(len(r.panels) for r in dashboard.rows)} validated panels")
         
         return dashboard
     

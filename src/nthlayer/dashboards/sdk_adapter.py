@@ -171,6 +171,39 @@ class SDKAdapter:
         return panel
     
     @staticmethod
+    def create_text_panel(
+        title: str,
+        content: str = "",
+        mode: str = "markdown"
+    ) -> Any:
+        """
+        Create text panel for guidance/documentation.
+        
+        Args:
+            title: Panel title
+            content: Markdown or HTML content
+            mode: Content mode ("markdown" or "html")
+            
+        Returns:
+            Text panel builder (or fallback to dict if SDK doesn't support)
+        """
+        try:
+            from grafana_foundation_sdk.builders import text
+            panel = text.Panel()
+            panel.title(title)
+            if hasattr(panel, 'content'):
+                panel.content(content)
+            if hasattr(panel, 'mode'):
+                panel.mode(mode)
+            return panel
+        except ImportError:
+            # Fallback: create a stat panel with the title indicating guidance
+            panel = stat.Panel()
+            panel.title(f"{title}")
+            panel.description(content)
+            return panel
+    
+    @staticmethod
     def create_prometheus_query(
         expr: str,
         legend_format: Optional[str] = None,

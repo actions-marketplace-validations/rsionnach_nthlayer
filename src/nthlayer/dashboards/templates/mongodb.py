@@ -59,11 +59,11 @@ class MongoDBTemplate(TechnologyTemplate):
                 panel_type="timeseries",
                 targets=[
                     Target(
-                        expr=f'histogram_quantile(0.95, rate(mongodb_query_duration_seconds_bucket{{service="{service_var}"}}[5m])) * 1000',
+                        expr=f'histogram_quantile(0.95, sum by (le) (rate(mongodb_query_duration_seconds_bucket{{service="{service_var}"}}[5m]))) * 1000',
                         legend_format="p95 query time",
                     ),
                     Target(
-                        expr=f'histogram_quantile(0.99, rate(mongodb_query_duration_seconds_bucket{{service="{service_var}"}}[5m])) * 1000',
+                        expr=f'histogram_quantile(0.99, sum by (le) (rate(mongodb_query_duration_seconds_bucket{{service="{service_var}"}}[5m]))) * 1000',
                         legend_format="p99 query time",
                     )
                 ],

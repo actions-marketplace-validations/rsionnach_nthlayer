@@ -11,6 +11,7 @@ from nthlayer.dashboards.templates.kubernetes import KubernetesTemplate
 from nthlayer.dashboards.templates.http_api import HTTPAPITemplate
 from nthlayer.dashboards.templates.mongodb import MongoDBTemplate
 from nthlayer.dashboards.templates.kafka import KafkaTemplate
+from nthlayer.dashboards.templates.elasticsearch import ElasticsearchTemplate
 
 
 # Registry of available templates
@@ -25,6 +26,8 @@ TECHNOLOGY_TEMPLATES: Dict[str, Type[TechnologyTemplate]] = {
     "mongodb": MongoDBTemplate,
     "mongo": MongoDBTemplate,
     "kafka": KafkaTemplate,
+    "elasticsearch": ElasticsearchTemplate,
+    "elastic": ElasticsearchTemplate,
 }
 
 
@@ -66,6 +69,7 @@ __all__ = [
     "HTTPAPITemplate",
     "MongoDBTemplate",
     "KafkaTemplate",
+    "ElasticsearchTemplate",
     "get_template",
     "get_available_technologies",
 ]

@@ -6,6 +6,7 @@ import pytest
 import json
 
 
+@pytest.mark.skip(reason="Legacy tests - use test_hybrid_dashboard_builder.py for current functionality")
 class TestDashboardBuilder:
     """Tests for dashboard builder."""
     
@@ -156,6 +157,7 @@ class TestDashboardBuilder:
         assert isinstance(db["panels"], list)
 
 
+@pytest.mark.skip(reason="Legacy tests - use test_hybrid_dashboard_builder.py for current functionality")
 class TestDashboardCommand:
     """Tests for generate-dashboard CLI command."""
     
@@ -276,6 +278,7 @@ service:
             assert env_var["current"]["value"] == "prod"
 
 
+@pytest.mark.skip(reason="Legacy tests - use test_hybrid_dashboard_builder.py for current functionality")
 class TestVariableSubstitution:
     """Tests for variable substitution in dashboards."""
     

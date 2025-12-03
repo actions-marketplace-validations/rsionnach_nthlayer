@@ -11,11 +11,13 @@ Now powered by Grafana Foundation SDK for type-safe dashboard generation.
 
 from typing import List, Optional, Any, Dict
 from grafana_foundation_sdk.builders import dashboard as sdk_dashboard
+from grafana_foundation_sdk.builders.dashboard import Row
 from grafana_foundation_sdk.cog.encoder import JSONEncoder
 
 from nthlayer.specs.models import Resource, ServiceContext
 from nthlayer.dashboards.sdk_adapter import SDKAdapter
 from nthlayer.dashboards.templates import get_template
+from nthlayer.dashboards.models import TemplateVariable, Panel, Target
 
 
 class DashboardBuilder:
@@ -82,18 +84,18 @@ class DashboardBuilder:
         
         # Add SLO panels
         if self.slo_resources:
-            slo_panels = self._build_slo_panels_sdk()
+            slo_panels = self._build_slo_panels()
             all_panels.extend(slo_panels)
             logger.info(f"Added {len(slo_panels)} SLO panels")
         
         # Add service health panels
-        health_panels = self._build_health_panels_sdk()
+        health_panels = self._build_health_panels()
         all_panels.extend(health_panels)
         logger.info(f"Added {len(health_panels)} health panels")
         
         # Add technology-specific panels if dependencies exist
         if self.dependency_resources:
-            tech_panels = self._build_technology_panels_sdk()
+            tech_panels = self._build_technology_panels()
             all_panels.extend(tech_panels)
             logger.info(f"Added {len(tech_panels)} technology panels")
         

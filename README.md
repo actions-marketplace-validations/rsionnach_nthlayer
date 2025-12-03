@@ -418,7 +418,7 @@ nthlayer apply examples/services/payment-api.yaml
 **Happy coding!** 🚀
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[tests-shield]: https://github.com/rsionnach/nthlayer/actions/workflows/ci.yml/badge.svg
+[tests-shield]: https://img.shields.io/github/actions/workflow/status/rsionnach/nthlayer/ci.yml?style=for-the-badge&logo=github&label=tests
 [tests-url]: https://github.com/rsionnach/nthlayer/actions/workflows/ci.yml
 [python-shield]: https://img.shields.io/badge/python-3.9%2B-blue?style=for-the-badge&logo=python
 [python-url]: https://python.org

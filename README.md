@@ -172,11 +172,12 @@ $ nthlayer apply payment-api.yaml --env prod
 - ✅ **Template Variables** - Portable queries with `${service}`, `${team}`, etc.
 
 ### Observability Suite
+- ✅ **Hybrid Dashboard Model** - Intent-based templates + live metric discovery for zero "No Data" panels
 - ✅ **Dashboard Generation** - Auto-generate Grafana dashboards (12-28 panels per service)
-- ✅ **Technology Templates** - 40 production-grade panels for PostgreSQL, Redis, Kubernetes, HTTP/API
+- ✅ **Technology Templates** - 40+ production-grade panels for PostgreSQL, Redis, Elasticsearch, MongoDB, HTTP/API
+- ✅ **118 Auto-Generated Alerts** - Production-ready Prometheus alerts with smart routing
 - ✅ **Recording Rules** - 20+ pre-computed metrics for 10x faster dashboards
-- ✅ **Full/Overview Modes** - Choose between comprehensive or focused dashboards
-- ✅ **Auto-Detection** - Technology panels auto-added based on dependencies
+- ✅ **4 Deployment Methods** - Kubernetes, Mimir/Cortex, GitOps, or traditional Prometheus
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -389,10 +390,18 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 NthLayer builds on the shoulders of giants:
 
-* **[awesome-prometheus-alerts](https://github.com/samber/awesome-prometheus-alerts)** - 400+ battle-tested alert rules (CC BY 4.0 license)
-* **[Sloth](https://github.com/slok/sloth)** - SLO specification format
+### Core Dependencies
+* **[grafana-foundation-sdk](https://github.com/grafana/grafana-foundation-sdk)** - Grafana dashboard generation SDK (Apache 2.0). Powers our Hybrid Model for intent-based dashboard generation with type-safe panel building.
+* **[awesome-prometheus-alerts](https://github.com/samber/awesome-prometheus-alerts)** - 580+ battle-tested alert rules (CC BY 4.0). Our alert templates for PostgreSQL, Redis, Elasticsearch, and 40+ technologies.
+
+### Architecture Inspiration
+* **[Sloth](https://github.com/slok/sloth)** - SLO specification format and burn rate calculations
+* **[OpenSLO](https://github.com/openslo/openslo)** - SLO specification standard
+
+### Tooling
 * **[Best-README-Template](https://github.com/othneildrew/Best-README-Template)** - This README structure
 * **[Shields.io](https://shields.io/)** - Badges used in this README
+* **[Slidev](https://sli.dev/)** - Presentation framework for our decks
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

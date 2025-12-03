@@ -217,6 +217,31 @@
                             </div>
                             <p class="dashboard-note">Each dashboard is organized into: <strong>SLO Metrics</strong> → <strong>Service Health</strong> → <strong>Dependencies</strong></p>
                         </div>
+                        
+                        <!-- Embedded Dashboard Preview -->
+                        <div class="embedded-dashboard">
+                            <div class="dashboard-tabs">
+                                <button class="dashboard-tab active" data-dashboard="payment-api">💳 payment-api</button>
+                                <button class="dashboard-tab" data-dashboard="checkout-service">🛒 checkout-service</button>
+                                <button class="dashboard-tab" data-dashboard="notification-worker">📬 notification-worker</button>
+                                <button class="dashboard-tab" data-dashboard="analytics-stream">📊 analytics-stream</button>
+                                <button class="dashboard-tab" data-dashboard="identity-service">🔐 identity-service</button>
+                                <button class="dashboard-tab" data-dashboard="search-api">🔍 search-api</button>
+                            </div>
+                            <div class="dashboard-iframe-container">
+                                <iframe 
+                                    id="dashboard-iframe"
+                                    src="https://nthlayer.grafana.net/public-dashboards/b85f7be155184779ad4200b20f0411b4"
+                                    frameborder="0"
+                                    allowfullscreen
+                                ></iframe>
+                                <div class="dashboard-overlay">
+                                    <a href="https://nthlayer.grafana.net/public-dashboards/b85f7be155184779ad4200b20f0411b4" target="_blank" class="button-secondary">
+                                        Open Full Dashboard ↗
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="value-callout" style="margin-top: var(--spacing-lg);">

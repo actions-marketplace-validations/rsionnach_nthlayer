@@ -368,20 +368,25 @@ _For more examples and detailed usage, please refer to the [Getting Started Guid
 
 ### Recently Completed ✅
 - [x] Multi-environment support (dev/staging/prod)
-- [x] Auto-generated alerts (400+ rules)
-- [x] Dashboard generation (12-28 panels)
-- [x] Technology templates (PostgreSQL, Redis, K8s, HTTP/API)
-- [x] Recording rules (20+ metrics)
-- [x] Template variables and portability
+- [x] Auto-generated alerts (118 rules across 6 technologies)
+- [x] Dashboard generation (12-40 panels with Hybrid Model)
+- [x] Technology templates (PostgreSQL, Redis, MySQL, MongoDB, Elasticsearch, K8s)
+- [x] Recording rules (21+ pre-computed metrics)
+- [x] Configuration system with multi-cloud secrets (7 backends)
+- [x] PyPI release (0.1.0a1) - `pipx install nthlayer`
+
+### Next Focus 🎯
+- [ ] **PagerDuty Integration** - Full end-to-end workflow, routing, escalation policies
+- [ ] Error Budget Foundation - OpenSLO parser, budget tracking, burn rate calculation
+- [ ] Interactive demo gallery improvements
 
 ### Coming Soon
-- [ ] MySQL, MongoDB, Elasticsearch templates
-- [ ] Custom panel selection for dashboards
-- [ ] Multi-service aggregate dashboards
-- [ ] Datadog integration
-- [ ] Slack notifications
+- [ ] Deployment policies & gates (ArgoCD integration)
+- [ ] Intelligent alerts based on error budget consumption
+- [ ] Additional templates (Kafka, RabbitMQ, Cassandra)
+- [ ] Datadog and Slack integrations
 
-See the [open issues](https://github.com/rsionnach/nthlayer/issues) for a full list of proposed features and known issues.
+**We're in early alpha!** Seeking feedback from SRE teams. [Join the discussion](https://github.com/rsionnach/nthlayer/discussions) or [report issues](https://github.com/rsionnach/nthlayer/issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

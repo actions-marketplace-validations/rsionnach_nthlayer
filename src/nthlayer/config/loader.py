@@ -17,7 +17,7 @@ import structlog
 import yaml
 
 from nthlayer.config.integrations import IntegrationConfig
-from nthlayer.config.secrets import SecretConfig, SecretBackend
+from nthlayer.config.secrets import SecretBackend, SecretConfig
 
 logger = structlog.get_logger()
 

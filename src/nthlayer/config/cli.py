@@ -13,30 +13,24 @@ Commands:
 from __future__ import annotations
 
 import getpass
-import sys
 from pathlib import Path
-from typing import Any
 
 from nthlayer.config.integrations import (
+    GrafanaProfile,
+    GrafanaType,
     IntegrationConfig,
     PrometheusProfile,
-    GrafanaProfile,
     PrometheusType,
-    GrafanaType,
 )
 from nthlayer.config.loader import (
-    ConfigLoader,
     get_config_path,
     load_config,
     save_config,
 )
 from nthlayer.config.secrets import (
-    SecretConfig,
-    SecretResolver,
     SecretBackend,
     get_secret_resolver,
 )
-
 
 REQUIRED_SECRETS = [
     "grafana/api_key",
@@ -75,9 +69,10 @@ def config_show_command(reveal_secrets: bool = False) -> int:
         if profile.password_secret:
             if reveal_secrets:
                 password = profile.get_password()
-                print(f"    Password: {password[:4]}...{password[-4:] if password else '(not set)'}")
+                masked = f"{password[:4]}...{password[-4:]}" if password else "(not set)"
+                print(f"    Password: {masked}")
             else:
-                print(f"    Password: ****")
+                print("    Password: ****")
     print()
     
     print("Grafana:")
@@ -93,13 +88,14 @@ def config_show_command(reveal_secrets: bool = False) -> int:
                 key = profile.get_api_key()
                 print(f"    API Key: {key[:8]}...{key[-4:] if key else '(not set)'}")
             else:
-                print(f"    API Key: ****")
+                print("    API Key: ****")
     print()
     
     print("Alerting:")
     print(f"  PagerDuty: {'enabled' if config.alerting.pagerduty.enabled else 'disabled'}")
     if config.alerting.pagerduty.enabled:
-        print(f"    Escalation Policy: {config.alerting.pagerduty.default_escalation_policy or '(not set)'}")
+        policy = config.alerting.pagerduty.default_escalation_policy or "(not set)"
+        print(f"    Escalation Policy: {policy}")
     print(f"  Slack: {'enabled' if config.alerting.slack.enabled else 'disabled'}")
     if config.alerting.slack.enabled:
         print(f"    Default Channel: {config.alerting.slack.default_channel}")
@@ -188,7 +184,8 @@ def _set_alerting_config(config: IntegrationConfig, key: str, value: str | None)
     if key.startswith("pagerduty."):
         field = key.split(".", 1)[1]
         if field == "enabled":
-            config.alerting.pagerduty.enabled = value.lower() in ("true", "1", "yes") if value else False
+            enabled = value.lower() in ("true", "1", "yes") if value else False
+            config.alerting.pagerduty.enabled = enabled
         elif field == "api_key":
             config.alerting.pagerduty.api_key_secret = value
         elif field == "escalation_policy":
@@ -196,7 +193,8 @@ def _set_alerting_config(config: IntegrationConfig, key: str, value: str | None)
     elif key.startswith("slack."):
         field = key.split(".", 1)[1]
         if field == "enabled":
-            config.alerting.slack.enabled = value.lower() in ("true", "1", "yes") if value else False
+            enabled = value.lower() in ("true", "1", "yes") if value else False
+            config.alerting.slack.enabled = enabled
         elif field == "webhook_url":
             config.alerting.slack.webhook_url_secret = value
         elif field == "channel":
@@ -239,8 +237,9 @@ def config_init_command() -> int:
     
     if selected_backend == "vault":
         vault_addr = input("Vault address (https://vault.example.com): ").strip()
-        vault_auth = input("Auth method [token/kubernetes/aws_iam/approle] (token): ").strip() or "token"
-        vault_role = input("Vault role (optional): ").strip() or None
+        vault_auth = input("Auth method [token/kubernetes/aws_iam/approle] (token): ").strip()
+        vault_auth = vault_auth or "token"
+        _vault_role = input("Vault role (optional): ").strip() or None  # noqa: F841
         print(f"Vault configured: {vault_addr} ({vault_auth} auth)")
     elif selected_backend == "aws":
         aws_region = input("AWS region (us-east-1): ").strip() or "us-east-1"
@@ -260,12 +259,18 @@ def config_init_command() -> int:
     
     print("Grafana Configuration")
     print("-" * 40)
-    grafana_type = input("Grafana type [grafana/grafana-cloud] (grafana): ").strip() or "grafana"
-    grafana_url = input("Grafana URL (http://localhost:3000): ").strip() or "http://localhost:3000"
+    grafana_type = input("Grafana type [grafana/grafana-cloud] (grafana): ").strip()
+    grafana_type = grafana_type or "grafana"
+    grafana_url = input("Grafana URL (http://localhost:3000): ").strip()
+    grafana_url = grafana_url or "http://localhost:3000"
     
     profile = GrafanaProfile(
         name="default",
-        type=GrafanaType(grafana_type) if grafana_type in ("grafana", "grafana-cloud") else GrafanaType.GRAFANA,
+        type=(
+            GrafanaType(grafana_type)
+            if grafana_type in ("grafana", "grafana-cloud")
+            else GrafanaType.GRAFANA
+        ),
         url=grafana_url,
     )
     
@@ -282,12 +287,18 @@ def config_init_command() -> int:
     
     print("Prometheus Configuration")
     print("-" * 40)
-    prom_type = input("Prometheus type [prometheus/mimir/grafana-cloud] (prometheus): ").strip() or "prometheus"
-    prom_url = input("Prometheus URL (http://localhost:9090): ").strip() or "http://localhost:9090"
+    prom_type = input("Prometheus type [prometheus/mimir/grafana-cloud] (prometheus): ").strip()
+    prom_type = prom_type or "prometheus"
+    prom_url = input("Prometheus URL (http://localhost:9090): ").strip()
+    prom_url = prom_url or "http://localhost:9090"
     
     prom_profile = PrometheusProfile(
         name="default",
-        type=PrometheusType(prom_type) if prom_type in ("prometheus", "mimir", "grafana-cloud") else PrometheusType.PROMETHEUS,
+        type=(
+            PrometheusType(prom_type)
+            if prom_type in ("prometheus", "mimir", "grafana-cloud")
+            else PrometheusType.PROMETHEUS
+        ),
         url=prom_url,
     )
     

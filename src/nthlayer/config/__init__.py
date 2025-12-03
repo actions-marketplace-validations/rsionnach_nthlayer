@@ -9,27 +9,26 @@ Provides unified configuration management with:
 """
 
 # Re-export Settings for backward compatibility
-from nthlayer.config.settings import Settings, get_settings, settings
-
-from nthlayer.config.secrets import (
-    SecretResolver,
-    SecretBackend,
-    resolve_secret,
-    get_secret_resolver,
-)
 from nthlayer.config.integrations import (
-    IntegrationConfig,
-    PrometheusConfig,
     GrafanaConfig,
+    IntegrationConfig,
     PagerDutyConfig,
+    PrometheusConfig,
     SlackConfig,
     get_integration_config,
 )
 from nthlayer.config.loader import (
     ConfigLoader,
-    load_config,
     get_config_path,
+    load_config,
 )
+from nthlayer.config.secrets import (
+    SecretBackend,
+    SecretResolver,
+    get_secret_resolver,
+    resolve_secret,
+)
+from nthlayer.config.settings import Settings, get_settings, settings
 
 __all__ = [
     # Settings (backward compat)

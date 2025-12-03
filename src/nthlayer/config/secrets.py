@@ -25,7 +25,6 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +52,9 @@ class SecretBackend(StrEnum):
 class SecretConfig:
     """Configuration for secrets resolution."""
     backend: SecretBackend = SecretBackend.ENV
-    fallback: list[SecretBackend] = field(default_factory=lambda: [SecretBackend.ENV, SecretBackend.FILE])
+    fallback: list[SecretBackend] = field(
+        default_factory=lambda: [SecretBackend.ENV, SecretBackend.FILE]
+    )
     
     # Vault config
     vault_address: str | None = None
@@ -78,7 +79,9 @@ class SecretConfig:
     doppler_config: str | None = None
     
     # File config
-    credentials_file: Path = field(default_factory=lambda: Path.home() / ".nthlayer" / "credentials.yaml")
+    credentials_file: Path = field(
+        default_factory=lambda: Path.home() / ".nthlayer" / "credentials.yaml"
+    )
 
 
 class BaseSecretBackend(ABC):
@@ -155,7 +158,9 @@ class FileSecretBackend(BaseSecretBackend):
             with open(self.credentials_file) as f:
                 self._cache = yaml.safe_load(f) or {}
         except Exception as e:
-            logger.warning("failed_to_load_credentials", file=str(self.credentials_file), error=str(e))
+            logger.warning(
+                "failed_to_load_credentials", file=str(self.credentials_file), error=str(e)
+            )
             self._cache = {}
         
         return self._cache
@@ -242,8 +247,8 @@ class VaultSecretBackend(BaseSecretBackend):
         
         try:
             import hvac
-        except ImportError:
-            raise ImportError("hvac package required for Vault backend: pip install hvac")
+        except ImportError as err:
+            raise ImportError("hvac package required for Vault backend: pip install hvac") from err
         
         self._client = hvac.Client(
             url=self.config.vault_address,
@@ -283,8 +288,8 @@ class VaultSecretBackend(BaseSecretBackend):
                     session_token=credentials.token,
                     region=self.config.aws_region,
                 )
-            except ImportError:
-                raise ImportError("boto3 required for AWS IAM auth: pip install boto3")
+            except ImportError as err:
+                raise ImportError("boto3 required for AWS IAM auth: pip install boto3") from err
             except Exception as e:
                 logger.error("vault_aws_iam_auth_failed", error=str(e))
         
@@ -383,8 +388,8 @@ class AWSSecretBackend(BaseSecretBackend):
         
         try:
             import boto3
-        except ImportError:
-            raise ImportError("boto3 package required for AWS backend: pip install boto3")
+        except ImportError as err:
+            raise ImportError("boto3 package required for AWS backend: pip install boto3") from err
         
         self._client = boto3.client("secretsmanager", region_name=self.config.aws_region)
         return self._client
@@ -500,10 +505,10 @@ class AzureSecretBackend(BaseSecretBackend):
         try:
             from azure.identity import DefaultAzureCredential
             from azure.keyvault.secrets import SecretClient
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "Azure SDK required: pip install azure-identity azure-keyvault-secrets"
-            )
+            ) from err
         
         credential = DefaultAzureCredential()
         self._client = SecretClient(
@@ -586,10 +591,10 @@ class GCPSecretBackend(BaseSecretBackend):
         
         try:
             from google.cloud import secretmanager
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "Google Cloud SDK required: pip install google-cloud-secret-manager"
-            )
+            ) from err
         
         self._client = secretmanager.SecretManagerServiceClient()
         return self._client
@@ -697,8 +702,8 @@ class DopplerSecretBackend(BaseSecretBackend):
         
         try:
             import httpx
-        except ImportError:
-            raise ImportError("httpx required for Doppler backend")
+        except ImportError as err:
+            raise ImportError("httpx required for Doppler backend") from err
         
         project = self.config.doppler_project or "nthlayer"
         config = self.config.doppler_config or "prd"
@@ -806,7 +811,9 @@ class SecretResolver:
             try:
                 self._backends[SecretBackend.GCP] = GCPSecretBackend(self.config)
             except ImportError:
-                logger.debug("gcp_backend_unavailable", reason="google-cloud-secret-manager not installed")
+                logger.debug(
+                    "gcp_backend_unavailable", reason="google-cloud-secret-manager not installed"
+                )
         
         if os.environ.get("DOPPLER_TOKEN") or self.config.doppler_project:
             try:

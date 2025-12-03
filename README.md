@@ -10,7 +10,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/rsionnach/nthlayer">
-    <img src="presentations/public/nthlayer_dark_logo.png" alt="NthLayer Logo" width="200">
+    <img src="presentations/public/nthlayer_dark_banner.png" alt="NthLayer Logo" width="400">
   </a>
 
 <h3 align="center">NthLayer</h3>

@@ -45,7 +45,7 @@ ENV/
 *.pem
 
 # Generated files (NthLayer output)
-generated/
+# Note: generated/ is tracked to provide examples for the demo site
 *.log
 
 # OS

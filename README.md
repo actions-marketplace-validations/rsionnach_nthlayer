@@ -195,19 +195,30 @@ Get NthLayer running locally in 5 minutes. No external accounts required for dev
 
 ### Prerequisites
 
-You only need:
-* **Docker** - For PostgreSQL and Redis
-* **Python 3.9+** - For the NthLayer CLI
-* **Make** - For convenient shortcuts (optional)
+* **Python 3.11+** - Required for NthLayer CLI
+* **Docker** - For PostgreSQL and Redis (optional, for full features)
 
 ### Installation
 
-**Option 1: pip install (recommended)**
+**Option 1: pipx (recommended)**
 ```bash
+# Install pipx if you don't have it
+brew install pipx && pipx ensurepath
+
+# Install nthlayer
+pipx install nthlayer
+```
+
+**Option 2: pip with Python 3.11+**
+```bash
+# Ensure you're using Python 3.11+
+python3.11 -m pip install nthlayer
+
+# Or if python3 points to 3.11+
 pip install nthlayer
 ```
 
-**Option 2: From source (for development)**
+**Option 3: From source (for development)**
 
 1. Clone the repo
    ```bash

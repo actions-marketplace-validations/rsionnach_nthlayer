@@ -547,6 +547,12 @@ def build_parser() -> argparse.ArgumentParser:
     secrets_get_parser = secrets_subparsers.add_parser("get", help="Get a secret value")
     secrets_get_parser.add_argument("path", help="Secret path")
     secrets_get_parser.add_argument("--reveal", action="store_true", help="Show full value (redacted by default)")
+    
+    secrets_migrate_parser = secrets_subparsers.add_parser("migrate", help="Migrate secrets between backends")
+    secrets_migrate_parser.add_argument("source", help="Source backend (env, file, vault, aws, azure, gcp, doppler)")
+    secrets_migrate_parser.add_argument("target", help="Target backend")
+    secrets_migrate_parser.add_argument("--secrets", nargs="+", help="Specific secrets to migrate")
+    secrets_migrate_parser.add_argument("--dry-run", action="store_true", help="Preview without making changes")
 
     subparsers.add_parser("list-services", help="List available services")
     subparsers.add_parser("list-teams", help="List available teams")
@@ -797,6 +803,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             secrets_verify_command,
             secrets_set_command,
             secrets_get_command,
+            secrets_migrate_command,
         )
         
         if args.secrets_command == "list":
@@ -807,8 +814,14 @@ def main(argv: Sequence[str] | None = None) -> None:
             sys.exit(secrets_set_command(args.path, args.value, backend=args.backend))
         elif args.secrets_command == "get":
             sys.exit(secrets_get_command(args.path, reveal=args.reveal))
+        elif args.secrets_command == "migrate":
+            sys.exit(secrets_migrate_command(
+                args.source, args.target,
+                secrets=args.secrets,
+                dry_run=args.dry_run
+            ))
         else:
-            print("Usage: nthlayer secrets [list|verify|set|get]")
+            print("Usage: nthlayer secrets [list|verify|set|get|migrate]")
             sys.exit(1)
     
     if args.command == "generate-dashboard":

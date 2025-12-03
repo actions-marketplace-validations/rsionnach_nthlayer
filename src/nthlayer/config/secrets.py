@@ -212,7 +212,25 @@ class FileSecretBackend(BaseSecretBackend):
 
 
 class VaultSecretBackend(BaseSecretBackend):
-    """HashiCorp Vault secret backend."""
+    """
+    HashiCorp Vault secret backend.
+    
+    Supports multiple authentication methods:
+    - token: Uses VAULT_TOKEN environment variable
+    - kubernetes: Uses service account JWT for in-cluster auth
+    - aws_iam: Uses AWS IAM credentials for auth
+    - approle: Uses AppRole for machine-to-machine auth
+    - github: Uses GitHub personal access token
+    
+    Config in .nthlayer/config.yaml:
+        secrets:
+          backend: vault
+          vault:
+            address: https://vault.example.com
+            auth_method: kubernetes  # or token, aws_iam, approle
+            role: nthlayer-app
+            namespace: admin  # Enterprise only
+    """
     
     def __init__(self, config: SecretConfig):
         self.config = config
@@ -232,11 +250,16 @@ class VaultSecretBackend(BaseSecretBackend):
             namespace=self.config.vault_namespace,
         )
         
-        if self.config.vault_auth_method == "token":
+        auth_method = self.config.vault_auth_method
+        
+        if auth_method == "token":
             token = os.environ.get("VAULT_TOKEN")
             if token:
                 self._client.token = token
-        elif self.config.vault_auth_method == "kubernetes":
+            else:
+                logger.warning("vault_token_not_set", hint="Set VAULT_TOKEN env var")
+        
+        elif auth_method == "kubernetes":
             jwt_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
             if os.path.exists(jwt_path):
                 with open(jwt_path) as f:
@@ -245,6 +268,46 @@ class VaultSecretBackend(BaseSecretBackend):
                     role=self.config.vault_role,
                     jwt=jwt,
                 )
+            else:
+                logger.warning("kubernetes_jwt_not_found", path=jwt_path)
+        
+        elif auth_method == "aws_iam":
+            try:
+                import boto3
+                session = boto3.Session()
+                credentials = session.get_credentials()
+                self._client.auth.aws.iam_login(
+                    role=self.config.vault_role,
+                    access_key=credentials.access_key,
+                    secret_key=credentials.secret_key,
+                    session_token=credentials.token,
+                    region=self.config.aws_region,
+                )
+            except ImportError:
+                raise ImportError("boto3 required for AWS IAM auth: pip install boto3")
+            except Exception as e:
+                logger.error("vault_aws_iam_auth_failed", error=str(e))
+        
+        elif auth_method == "approle":
+            role_id = os.environ.get("VAULT_ROLE_ID")
+            secret_id = os.environ.get("VAULT_SECRET_ID")
+            if role_id and secret_id:
+                self._client.auth.approle.login(
+                    role_id=role_id,
+                    secret_id=secret_id,
+                )
+            else:
+                logger.warning(
+                    "vault_approle_creds_missing",
+                    hint="Set VAULT_ROLE_ID and VAULT_SECRET_ID env vars"
+                )
+        
+        elif auth_method == "github":
+            github_token = os.environ.get("VAULT_GITHUB_TOKEN")
+            if github_token:
+                self._client.auth.github.login(token=github_token)
+            else:
+                logger.warning("vault_github_token_missing")
         
         return self._client
     
@@ -297,7 +360,18 @@ class VaultSecretBackend(BaseSecretBackend):
 
 
 class AWSSecretBackend(BaseSecretBackend):
-    """AWS Secrets Manager backend."""
+    """
+    AWS Secrets Manager backend.
+    
+    Uses the default AWS credential chain:
+    - Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+    - Shared credentials file (~/.aws/credentials)
+    - IAM role (when running on EC2/ECS/Lambda)
+    
+    Secret path format:
+    - "grafana/api_key" -> AWS secret "nthlayer/grafana" with key "api_key"
+    - "database/password" -> AWS secret "nthlayer/database" with key "password"
+    """
     
     def __init__(self, config: SecretConfig):
         self.config = config
@@ -310,7 +384,7 @@ class AWSSecretBackend(BaseSecretBackend):
         try:
             import boto3
         except ImportError:
-            raise ImportError("boto3 package required for AWS backend")
+            raise ImportError("boto3 package required for AWS backend: pip install boto3")
         
         self._client = boto3.client("secretsmanager", region_name=self.config.aws_region)
         return self._client
@@ -319,13 +393,13 @@ class AWSSecretBackend(BaseSecretBackend):
         try:
             import json
             client = self._get_client()
-            secret_id = f"{self.config.aws_secret_prefix}{path}"
             
             if "/" in path:
                 parts = path.rsplit("/", 1)
                 secret_id = f"{self.config.aws_secret_prefix}{parts[0]}"
                 key = parts[1]
             else:
+                secret_id = f"{self.config.aws_secret_prefix}{path}"
                 key = None
             
             response = client.get_secret_value(SecretId=secret_id)
@@ -340,7 +414,42 @@ class AWSSecretBackend(BaseSecretBackend):
             return None
     
     def set_secret(self, path: str, value: str) -> bool:
-        return False
+        """Create or update a secret in AWS Secrets Manager."""
+        try:
+            import json
+            client = self._get_client()
+            
+            if "/" in path:
+                parts = path.rsplit("/", 1)
+                secret_id = f"{self.config.aws_secret_prefix}{parts[0]}"
+                key = parts[1]
+            else:
+                secret_id = f"{self.config.aws_secret_prefix}{path}"
+                key = "value"
+            
+            try:
+                existing = client.get_secret_value(SecretId=secret_id)
+                secret_data = json.loads(existing.get("SecretString", "{}"))
+            except client.exceptions.ResourceNotFoundException:
+                secret_data = {}
+            
+            secret_data[key] = value
+            
+            try:
+                client.put_secret_value(
+                    SecretId=secret_id,
+                    SecretString=json.dumps(secret_data)
+                )
+            except client.exceptions.ResourceNotFoundException:
+                client.create_secret(
+                    Name=secret_id,
+                    SecretString=json.dumps(secret_data)
+                )
+            
+            return True
+        except Exception as e:
+            logger.error("aws_set_secret_failed", path=path, error=str(e))
+            return False
     
     def list_secrets(self) -> list[str]:
         try:
@@ -355,6 +464,302 @@ class AWSSecretBackend(BaseSecretBackend):
             return secrets
         except Exception:
             return []
+    
+    def supports_write(self) -> bool:
+        return True
+
+
+class AzureSecretBackend(BaseSecretBackend):
+    """
+    Azure Key Vault backend.
+    
+    Uses DefaultAzureCredential for authentication:
+    - Environment variables (AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_CLIENT_SECRET)
+    - Managed Identity (when running on Azure)
+    - Azure CLI credentials
+    - Visual Studio Code credentials
+    
+    Secret path format:
+    - "grafana/api-key" -> Key Vault secret "nthlayer-grafana-api-key"
+    - "database/password" -> Key Vault secret "nthlayer-database-password"
+    
+    Note: Azure Key Vault secret names can only contain alphanumeric and hyphens.
+    """
+    
+    def __init__(self, config: SecretConfig):
+        self.config = config
+        self._client = None
+    
+    def _get_client(self):
+        if self._client is not None:
+            return self._client
+        
+        if not self.config.azure_vault_url:
+            raise ValueError("Azure vault_url not configured")
+        
+        try:
+            from azure.identity import DefaultAzureCredential
+            from azure.keyvault.secrets import SecretClient
+        except ImportError:
+            raise ImportError(
+                "Azure SDK required: pip install azure-identity azure-keyvault-secrets"
+            )
+        
+        credential = DefaultAzureCredential()
+        self._client = SecretClient(
+            vault_url=self.config.azure_vault_url,
+            credential=credential
+        )
+        return self._client
+    
+    def _path_to_secret_name(self, path: str) -> str:
+        """Convert path to Azure-compatible secret name."""
+        return f"nthlayer-{path.replace('/', '-').replace('_', '-')}"
+    
+    def _secret_name_to_path(self, name: str) -> str:
+        """Convert Azure secret name back to path."""
+        if name.startswith("nthlayer-"):
+            return name[9:].replace("-", "/")
+        return name
+    
+    def get_secret(self, path: str) -> str | None:
+        try:
+            client = self._get_client()
+            secret_name = self._path_to_secret_name(path)
+            secret = client.get_secret(secret_name)
+            return secret.value
+        except Exception as e:
+            logger.debug("azure_secret_not_found", path=path, error=str(e))
+            return None
+    
+    def set_secret(self, path: str, value: str) -> bool:
+        try:
+            client = self._get_client()
+            secret_name = self._path_to_secret_name(path)
+            client.set_secret(secret_name, value)
+            return True
+        except Exception as e:
+            logger.error("azure_set_secret_failed", path=path, error=str(e))
+            return False
+    
+    def list_secrets(self) -> list[str]:
+        try:
+            client = self._get_client()
+            secrets = []
+            for secret_properties in client.list_properties_of_secrets():
+                name = secret_properties.name
+                if name.startswith("nthlayer-"):
+                    secrets.append(self._secret_name_to_path(name))
+            return secrets
+        except Exception:
+            return []
+    
+    def supports_write(self) -> bool:
+        return True
+
+
+class GCPSecretBackend(BaseSecretBackend):
+    """
+    Google Cloud Secret Manager backend.
+    
+    Uses Application Default Credentials:
+    - GOOGLE_APPLICATION_CREDENTIALS environment variable
+    - Workload Identity (GKE)
+    - Compute Engine default service account
+    - gcloud CLI credentials
+    
+    Secret path format:
+    - "grafana/api_key" -> GCP secret "nthlayer-grafana-api-key"
+    - "database/password" -> GCP secret "nthlayer-database-password"
+    """
+    
+    def __init__(self, config: SecretConfig):
+        self.config = config
+        self._client = None
+    
+    def _get_client(self):
+        if self._client is not None:
+            return self._client
+        
+        if not self.config.gcp_project_id:
+            raise ValueError("GCP project_id not configured")
+        
+        try:
+            from google.cloud import secretmanager
+        except ImportError:
+            raise ImportError(
+                "Google Cloud SDK required: pip install google-cloud-secret-manager"
+            )
+        
+        self._client = secretmanager.SecretManagerServiceClient()
+        return self._client
+    
+    def _path_to_secret_name(self, path: str) -> str:
+        """Convert path to GCP-compatible secret name."""
+        return f"{self.config.gcp_secret_prefix}{path.replace('/', '-').replace('_', '-')}"
+    
+    def _get_secret_path(self, secret_name: str, version: str = "latest") -> str:
+        """Get full GCP secret path."""
+        return f"projects/{self.config.gcp_project_id}/secrets/{secret_name}/versions/{version}"
+    
+    def get_secret(self, path: str) -> str | None:
+        try:
+            client = self._get_client()
+            secret_name = self._path_to_secret_name(path)
+            secret_path = self._get_secret_path(secret_name)
+            
+            response = client.access_secret_version(request={"name": secret_path})
+            return response.payload.data.decode("UTF-8")
+        except Exception as e:
+            logger.debug("gcp_secret_not_found", path=path, error=str(e))
+            return None
+    
+    def set_secret(self, path: str, value: str) -> bool:
+        try:
+            client = self._get_client()
+            secret_name = self._path_to_secret_name(path)
+            parent = f"projects/{self.config.gcp_project_id}"
+            secret_path = f"{parent}/secrets/{secret_name}"
+            
+            try:
+                client.get_secret(request={"name": secret_path})
+            except Exception:
+                client.create_secret(
+                    request={
+                        "parent": parent,
+                        "secret_id": secret_name,
+                        "secret": {"replication": {"automatic": {}}},
+                    }
+                )
+            
+            client.add_secret_version(
+                request={
+                    "parent": secret_path,
+                    "payload": {"data": value.encode("UTF-8")},
+                }
+            )
+            return True
+        except Exception as e:
+            logger.error("gcp_set_secret_failed", path=path, error=str(e))
+            return False
+    
+    def list_secrets(self) -> list[str]:
+        try:
+            client = self._get_client()
+            parent = f"projects/{self.config.gcp_project_id}"
+            secrets = []
+            
+            for secret in client.list_secrets(request={"parent": parent}):
+                name = secret.name.split("/")[-1]
+                if name.startswith(self.config.gcp_secret_prefix):
+                    path = name[len(self.config.gcp_secret_prefix):].replace("-", "/")
+                    secrets.append(path)
+            
+            return secrets
+        except Exception:
+            return []
+    
+    def supports_write(self) -> bool:
+        return True
+
+
+class DopplerSecretBackend(BaseSecretBackend):
+    """
+    Doppler secrets backend.
+    
+    Requires DOPPLER_TOKEN environment variable or token in config.
+    
+    Secret path format:
+    - "GRAFANA_API_KEY" -> Doppler secret "GRAFANA_API_KEY"
+    - "grafana/api_key" -> Doppler secret "GRAFANA_API_KEY" (converted)
+    """
+    
+    def __init__(self, config: SecretConfig):
+        self.config = config
+        self._secrets_cache: dict[str, str] | None = None
+    
+    def _get_token(self) -> str | None:
+        return os.environ.get("DOPPLER_TOKEN")
+    
+    def _path_to_key(self, path: str) -> str:
+        """Convert path to Doppler key format (uppercase with underscores)."""
+        return path.replace("/", "_").replace("-", "_").upper()
+    
+    def _fetch_secrets(self) -> dict[str, str]:
+        """Fetch all secrets from Doppler."""
+        if self._secrets_cache is not None:
+            return self._secrets_cache
+        
+        token = self._get_token()
+        if not token:
+            logger.warning("doppler_token_not_set")
+            return {}
+        
+        try:
+            import httpx
+        except ImportError:
+            raise ImportError("httpx required for Doppler backend")
+        
+        project = self.config.doppler_project or "nthlayer"
+        config = self.config.doppler_config or "prd"
+        
+        try:
+            response = httpx.get(
+                "https://api.doppler.com/v3/configs/config/secrets/download",
+                params={"project": project, "config": config, "format": "json"},
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=10.0
+            )
+            response.raise_for_status()
+            self._secrets_cache = response.json()
+            return self._secrets_cache
+        except Exception as e:
+            logger.error("doppler_fetch_failed", error=str(e))
+            return {}
+    
+    def get_secret(self, path: str) -> str | None:
+        secrets = self._fetch_secrets()
+        key = self._path_to_key(path)
+        return secrets.get(key)
+    
+    def set_secret(self, path: str, value: str) -> bool:
+        token = self._get_token()
+        if not token:
+            return False
+        
+        try:
+            import httpx
+        except ImportError:
+            return False
+        
+        project = self.config.doppler_project or "nthlayer"
+        config = self.config.doppler_config or "prd"
+        key = self._path_to_key(path)
+        
+        try:
+            response = httpx.post(
+                "https://api.doppler.com/v3/configs/config/secrets",
+                json={
+                    "project": project,
+                    "config": config,
+                    "secrets": {key: value}
+                },
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=10.0
+            )
+            response.raise_for_status()
+            self._secrets_cache = None
+            return True
+        except Exception as e:
+            logger.error("doppler_set_failed", error=str(e))
+            return False
+    
+    def list_secrets(self) -> list[str]:
+        secrets = self._fetch_secrets()
+        return list(secrets.keys())
+    
+    def supports_write(self) -> bool:
+        return True
 
 
 class SecretResolver:
@@ -380,13 +785,34 @@ class SecretResolver:
         self._backends[SecretBackend.FILE] = FileSecretBackend(self.config.credentials_file)
         
         if self.config.vault_address:
-            self._backends[SecretBackend.VAULT] = VaultSecretBackend(self.config)
+            try:
+                self._backends[SecretBackend.VAULT] = VaultSecretBackend(self.config)
+            except ImportError:
+                logger.debug("vault_backend_unavailable", reason="hvac not installed")
         
         if self.config.aws_region:
             try:
                 self._backends[SecretBackend.AWS] = AWSSecretBackend(self.config)
             except ImportError:
-                pass
+                logger.debug("aws_backend_unavailable", reason="boto3 not installed")
+        
+        if self.config.azure_vault_url:
+            try:
+                self._backends[SecretBackend.AZURE] = AzureSecretBackend(self.config)
+            except ImportError:
+                logger.debug("azure_backend_unavailable", reason="azure-identity not installed")
+        
+        if self.config.gcp_project_id:
+            try:
+                self._backends[SecretBackend.GCP] = GCPSecretBackend(self.config)
+            except ImportError:
+                logger.debug("gcp_backend_unavailable", reason="google-cloud-secret-manager not installed")
+        
+        if os.environ.get("DOPPLER_TOKEN") or self.config.doppler_project:
+            try:
+                self._backends[SecretBackend.DOPPLER] = DopplerSecretBackend(self.config)
+            except ImportError:
+                logger.debug("doppler_backend_unavailable", reason="httpx not installed")
     
     def resolve(self, path: str, backend: SecretBackend | None = None) -> str | None:
         """

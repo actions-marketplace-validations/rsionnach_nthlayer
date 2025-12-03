@@ -212,6 +212,52 @@ def config_init_command() -> int:
     
     config = IntegrationConfig.default()
     
+    print("Secrets Backend Configuration")
+    print("-" * 40)
+    print("Available backends:")
+    print("  1. env     - Environment variables (NTHLAYER_*)")
+    print("  2. file    - Credentials file (~/.nthlayer/credentials.yaml)")
+    print("  3. vault   - HashiCorp Vault")
+    print("  4. aws     - AWS Secrets Manager")
+    print("  5. azure   - Azure Key Vault")
+    print("  6. gcp     - Google Cloud Secret Manager")
+    print("  7. doppler - Doppler")
+    print()
+    
+    backend_choice = input("Primary secrets backend [1-7] (1): ").strip() or "1"
+    backend_map = {
+        "1": "env", "env": "env",
+        "2": "file", "file": "file",
+        "3": "vault", "vault": "vault",
+        "4": "aws", "aws": "aws",
+        "5": "azure", "azure": "azure",
+        "6": "gcp", "gcp": "gcp",
+        "7": "doppler", "doppler": "doppler",
+    }
+    selected_backend = backend_map.get(backend_choice, "env")
+    print(f"Using backend: {selected_backend}")
+    
+    if selected_backend == "vault":
+        vault_addr = input("Vault address (https://vault.example.com): ").strip()
+        vault_auth = input("Auth method [token/kubernetes/aws_iam/approle] (token): ").strip() or "token"
+        vault_role = input("Vault role (optional): ").strip() or None
+        print(f"Vault configured: {vault_addr} ({vault_auth} auth)")
+    elif selected_backend == "aws":
+        aws_region = input("AWS region (us-east-1): ").strip() or "us-east-1"
+        print(f"AWS Secrets Manager configured in {aws_region}")
+    elif selected_backend == "azure":
+        azure_vault_url = input("Azure Key Vault URL: ").strip()
+        print(f"Azure Key Vault configured: {azure_vault_url}")
+    elif selected_backend == "gcp":
+        gcp_project = input("GCP project ID: ").strip()
+        print(f"GCP Secret Manager configured for project: {gcp_project}")
+    elif selected_backend == "doppler":
+        doppler_project = input("Doppler project (nthlayer): ").strip() or "nthlayer"
+        doppler_config = input("Doppler config (prd): ").strip() or "prd"
+        print(f"Doppler configured: {doppler_project}/{doppler_config}")
+    
+    print()
+    
     print("Grafana Configuration")
     print("-" * 40)
     grafana_type = input("Grafana type [grafana/grafana-cloud] (grafana): ").strip() or "grafana"
@@ -392,3 +438,94 @@ def secrets_get_command(path: str, reveal: bool = False) -> int:
         print(f"{path}: {masked}")
     
     return 0
+
+
+def secrets_migrate_command(
+    source: str,
+    target: str,
+    secrets: list[str] | None = None,
+    dry_run: bool = False
+) -> int:
+    """
+    Migrate secrets between backends.
+    
+    Examples:
+        nthlayer secrets migrate env vault
+        nthlayer secrets migrate file aws --secrets grafana/api_key pagerduty/token
+        nthlayer secrets migrate env vault --dry-run
+    """
+    print("=" * 60)
+    print("  Secrets Migration")
+    print("=" * 60)
+    print()
+    
+    try:
+        source_backend = SecretBackend(source)
+        target_backend = SecretBackend(target)
+    except ValueError as e:
+        print(f"Invalid backend: {e}")
+        print(f"Valid backends: {', '.join(b.value for b in SecretBackend)}")
+        return 1
+    
+    resolver = get_secret_resolver()
+    
+    if source_backend not in resolver._backends:
+        print(f"Source backend not available: {source}")
+        print("Check your configuration and ensure required packages are installed.")
+        return 1
+    
+    if target_backend not in resolver._backends:
+        print(f"Target backend not available: {target}")
+        print("Check your configuration and ensure required packages are installed.")
+        return 1
+    
+    target_backend_impl = resolver._backends[target_backend]
+    if not target_backend_impl.supports_write():
+        print(f"Target backend does not support writing: {target}")
+        return 1
+    
+    source_backend_impl = resolver._backends[source_backend]
+    
+    if secrets:
+        secrets_to_migrate = secrets
+    else:
+        secrets_to_migrate = source_backend_impl.list_secrets()
+    
+    if not secrets_to_migrate:
+        print(f"No secrets found in {source} backend")
+        return 0
+    
+    print(f"Source: {source}")
+    print(f"Target: {target}")
+    print(f"Secrets to migrate: {len(secrets_to_migrate)}")
+    print()
+    
+    if dry_run:
+        print("[DRY RUN] Would migrate:")
+        for secret_path in secrets_to_migrate:
+            value = source_backend_impl.get_secret(secret_path)
+            status = "found" if value else "NOT FOUND"
+            print(f"  {secret_path} ({status})")
+        return 0
+    
+    migrated = 0
+    failed = 0
+    
+    for secret_path in secrets_to_migrate:
+        value = source_backend_impl.get_secret(secret_path)
+        if value is None:
+            print(f"  SKIP {secret_path} (not found in source)")
+            continue
+        
+        success = target_backend_impl.set_secret(secret_path, value)
+        if success:
+            print(f"  OK   {secret_path}")
+            migrated += 1
+        else:
+            print(f"  FAIL {secret_path}")
+            failed += 1
+    
+    print()
+    print(f"Migration complete: {migrated} migrated, {failed} failed")
+    
+    return 0 if failed == 0 else 1

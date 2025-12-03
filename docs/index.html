@@ -334,6 +334,77 @@
                             </a>
                         </div>
                         <p class="dashboard-cta-note">Click any service to view its generated Prometheus alert rules on GitHub</p>
+                        
+                        <!-- Deploy Your Alerts -->
+                        <div class="deploy-section">
+                            <h4 class="deploy-title">🚀 Deploy Your Alerts</h4>
+                            <p class="deploy-subtitle">Generated alerts are standard Prometheus format — deploy anywhere</p>
+                            
+                            <div class="deploy-tabs">
+                                <button class="deploy-tab active" data-tab="k8s">Kubernetes</button>
+                                <button class="deploy-tab" data-tab="mimir">Mimir / Cortex</button>
+                                <button class="deploy-tab" data-tab="gitops">GitOps</button>
+                                <button class="deploy-tab" data-tab="prometheus">Prometheus</button>
+                            </div>
+                            
+                            <div class="deploy-content">
+                                <div class="deploy-panel active" id="panel-k8s">
+                                    <p class="deploy-desc">Using Prometheus Operator? Apply as a PrometheusRule CRD:</p>
+                                    <pre><code># Wrap in PrometheusRule CRD
+cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: payment-api-alerts
+  labels:
+    release: prometheus
+spec:
+$(cat generated/payment-api/alerts.yaml | sed 's/^/  /')
+EOF</code></pre>
+                                </div>
+                                
+                                <div class="deploy-panel" id="panel-mimir">
+                                    <p class="deploy-desc">Push directly to Grafana Mimir or Cortex ruler:</p>
+                                    <pre><code># Using mimirtool
+mimirtool rules load \
+  --address=https://mimir.example.com \
+  --id=your-tenant \
+  generated/payment-api/alerts.yaml
+
+# Or via API
+curl -X POST https://mimir.example.com/prometheus/config/v1/rules/payment-api \
+  -H "X-Scope-OrgID: your-tenant" \
+  --data-binary @generated/payment-api/alerts.yaml</code></pre>
+                                </div>
+                                
+                                <div class="deploy-panel" id="panel-gitops">
+                                    <p class="deploy-desc">Commit to your GitOps repo — ArgoCD or Flux handles the rest:</p>
+                                    <pre><code># Add to your GitOps repository
+cp generated/payment-api/alerts.yaml \
+   k8s/monitoring/rules/payment-api.yaml
+
+git add k8s/monitoring/rules/
+git commit -m "Add payment-api alerting rules"
+git push
+
+# ArgoCD/Flux automatically syncs to cluster
+# No manual kubectl required!</code></pre>
+                                </div>
+                                
+                                <div class="deploy-panel" id="panel-prometheus">
+                                    <p class="deploy-desc">Traditional Prometheus? Copy to rules directory and reload:</p>
+                                    <pre><code># Copy to Prometheus rules directory
+cp generated/payment-api/alerts.yaml \
+   /etc/prometheus/rules/payment-api.yaml
+
+# Validate syntax
+promtool check rules /etc/prometheus/rules/*.yaml
+
+# Reload Prometheus config
+curl -X POST http://localhost:9090/-/reload</code></pre>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="value-callout" style="margin-top: var(--spacing-lg);">

@@ -650,6 +650,111 @@ code {
     }
 }
 
+/* Deploy Section */
+.deploy-section {
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.deploy-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--color-text);
+}
+
+.deploy-subtitle {
+    color: var(--color-text-secondary);
+    font-size: 0.9375rem;
+    margin: 0 0 var(--spacing-md) 0;
+}
+
+.deploy-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.deploy-tab {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.deploy-tab:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text);
+}
+
+.deploy-tab.active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: white;
+}
+
+.deploy-content {
+    position: relative;
+}
+
+.deploy-panel {
+    display: none;
+}
+
+.deploy-panel.active {
+    display: block;
+}
+
+.deploy-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.deploy-panel pre {
+    margin: 0;
+    padding: var(--spacing-md);
+    background: #1a1a2e;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+}
+
+.deploy-panel code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: #e2e8f0;
+}
+
+@media (max-width: 768px) {
+    .deploy-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.5rem;
+    }
+    
+    .deploy-tab {
+        flex-shrink: 0;
+        font-size: 0.75rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .deploy-panel pre {
+        font-size: 0.75rem;
+    }
+}
+
 /* Files Grid */
 .files-grid {
     display: grid;

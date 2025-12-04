@@ -182,11 +182,10 @@ class PagerDutyResourceManager:
                         user_id=current_user_id,
                         role="manager",
                     )
-                    if member_result.success and member_result.created:
+                    if member_result.success:
                         result.created_resources.append("team_membership:manager")
-                    elif not member_result.success:
+                    else:
                         result.warnings.append(f"Team membership: {member_result.error}")
-                    result.warnings.extend(member_result.warnings)
             else:
                 result.warnings.append(f"Team creation failed: {team_result.error}")
 
@@ -347,6 +346,7 @@ class PagerDutyResourceManager:
         """
         try:
             # PagerDuty uses PUT for adding/updating team membership
+            logger.debug(f"PUT /teams/{team_id}/users/{user_id} with role={role}")
             response = self.client.put(
                 f"/teams/{team_id}/users/{user_id}",
                 json={"role": role},
@@ -372,6 +372,11 @@ class PagerDutyResourceManager:
             return ResourceResult(
                 success=False,
                 error=f"Failed to add team member: {err_text}",
+            )
+        except Exception as e:
+            return ResourceResult(
+                success=False,
+                error=f"Unexpected error: {e}",
             )
 
     def ensure_schedule(

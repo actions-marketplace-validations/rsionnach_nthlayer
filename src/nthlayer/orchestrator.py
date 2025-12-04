@@ -450,6 +450,7 @@ class ServiceOrchestrator:
             environment=self.env,
             dry_run=False,
             full_panels=False,
+            quiet=True,
         )
 
         # If push to Grafana is enabled, use the provider

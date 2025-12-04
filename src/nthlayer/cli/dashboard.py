@@ -14,6 +14,7 @@ def generate_dashboard_command(
     environment: Optional[str] = None,
     dry_run: bool = False,
     full_panels: bool = False,
+    quiet: bool = False,
 ) -> int:
     """Generate Grafana dashboard from service specification.
 
@@ -23,51 +24,56 @@ def generate_dashboard_command(
         environment: Environment name (dev, staging, prod)
         dry_run: Print dashboard JSON without writing file
         full_panels: Include all template panels (default: overview only)
+        quiet: Suppress output (for use in orchestrator)
 
     Returns:
         Exit code (0 for success, 1 for error)
     """
-    print("=" * 70)
-    print("  NthLayer: Generate Grafana Dashboard")
-    print("=" * 70)
-    print()
+    def log(msg: str) -> None:
+        if not quiet:
+            print(msg)
+
+    log("=" * 70)
+    log("  NthLayer: Generate Grafana Dashboard")
+    log("=" * 70)
+    log("")
 
     # Show configuration
-    print(f"Service: {service_file}")
+    log(f"Service: {service_file}")
     if environment:
-        print(f"🌍 Environment: {environment}")
+        log(f"Environment: {environment}")
     if dry_run:
-        print("Mode: Dry run (preview only)")
+        log("Mode: Dry run (preview only)")
     else:
-        print(f"Output: {output or 'generated/dashboards/{service}.json'}")
-    print()
+        log(f"Output: {output or 'generated/dashboards/{service}.json'}")
+    log("")
 
     try:
         # Parse service file
-        print("📋 Parsing service specification...")
+        log("Parsing service specification...")
         context, resources = parse_service_file(service_file, environment=environment)
 
-        print(f"   Service: {context.name}")
-        print(f"   Team: {context.team}")
-        print(f"   Tier: {context.tier}")
-        print(f"   Type: {context.type}")
-        print(f"   Resources: {len(resources)} defined")
-        print()
+        log(f"   Service: {context.name}")
+        log(f"   Team: {context.team}")
+        log(f"   Tier: {context.tier}")
+        log(f"   Type: {context.type}")
+        log(f"   Resources: {len(resources)} defined")
+        log("")
 
         # Count resource types
         slos = [r for r in resources if r.kind == "SLO"]
         dependencies = [r for r in resources if r.kind == "Dependencies"]
 
-        print(f"   SLOs: {len(slos)}")
-        print(f"   Dependencies: {len(dependencies)}")
-        print()
+        log(f"   SLOs: {len(slos)}")
+        log(f"   Dependencies: {len(dependencies)}")
+        log("")
 
         # Build dashboard
-        print("🏗️  Building dashboard...")
+        log("Building dashboard...")
         if full_panels:
-            print("   Mode: Full panels (all templates)")
+            log("   Mode: Full panels (all templates)")
         else:
-            print("   Mode: Overview panels (key metrics)")
+            log("   Mode: Overview panels (key metrics)")
         dashboard = build_dashboard(context, resources, full_panels=full_panels)
 
         # Dashboard is now a dict from SDK builder
@@ -86,20 +92,20 @@ def generate_dashboard_command(
             uid = dashboard.uid
             dashboard_json = dashboard.to_grafana_payload()
 
-        print(f"   Title: {title}")
-        print(f"   UID: {uid}")
-        print(f"   Panels: {panel_count}")
-        print()
+        log(f"   Title: {title}")
+        log(f"   UID: {uid}")
+        log(f"   Panels: {panel_count}")
+        log("")
 
         json_str = json.dumps(dashboard_json, indent=2)
 
         if dry_run:
-            # Print JSON to stdout
-            print("📄 Dashboard JSON (dry run):")
+            # Print JSON to stdout (always print for dry run)
+            print("Dashboard JSON (dry run):")
             print()
             print(json_str)
             print()
-            print("✅ Dashboard generated successfully (dry run)")
+            log("Dashboard generated successfully (dry run)")
             return 0
 
         # Determine output path
@@ -111,30 +117,21 @@ def generate_dashboard_command(
             output_path = output_dir / f"{context.name}.json"
 
         # Write to file
-        print(f"💾 Writing dashboard to {output_path}...")
+        log(f"Writing dashboard to {output_path}...")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json_str)
 
-        print()
-        print("✅ Dashboard generated successfully!")
-        print()
-        print("📊 Next steps:")
-        print("   1. Import to Grafana:")
-        print("      curl -X POST http://grafana:3000/api/dashboards/db \\")
-        print("           -H 'Content-Type: application/json' \\")
-        print("           -H 'Authorization: Bearer $GRAFANA_TOKEN' \\")
-        print(f"           -d @{output_path}")
-        print()
-        print(f"   2. Or manually import {output_path} in Grafana UI")
-        print()
+        log("")
+        log("Dashboard generated successfully!")
+        log("")
 
         return 0
 
     except FileNotFoundError:
-        print(f"❌ Error: Service file not found: {service_file}")
+        print(f"Error: Service file not found: {service_file}")
         return 1
     except Exception as e:
-        print(f"❌ Error generating dashboard: {e}")
+        print(f"Error generating dashboard: {e}")
         import traceback
 
         traceback.print_exc()

@@ -6,8 +6,9 @@
 
 **Body:**
 ```
-I built NthLayer because I was tired of copying dashboard JSON and writing
-the same alert rules for every new service.
+I built NthLayer because I was tired of the manual effort every time a new
+service onboards - copying dashboard JSON and writing the same alert rules
+for every new service.
 
 Define your service once:
 
@@ -29,7 +30,7 @@ Get automatically:
 Live demo with real metrics: https://rsionnach.github.io/nthlayer
 
 It's early alpha - I'm looking for SRE teams to try it on real services and
-share feedback. What observability toil would you want automated?
+share feedback. What would you automate first?
 
 GitHub: https://github.com/rsionnach/nthlayer
 Install: pipx install nthlayer
@@ -124,10 +125,10 @@ It's in early alpha and I'm looking for SRE/DevOps teams who want to try it
 and share feedback.
 
 🔗 Live demo: https://rsionnach.github.io/nthlayer
-📦 Install: pip install nthlayer
+📦 Install: pipx install nthlayer
 💻 GitHub: https://github.com/rsionnach/nthlayer
 
-What observability toil would you want automated? Drop a comment or DM me.
+What reliability work would you automate first? Drop a comment or DM me.
 
 #SRE #DevOps #Observability #Prometheus #Grafana #OpenSource
 ```

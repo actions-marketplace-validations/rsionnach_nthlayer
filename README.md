@@ -61,12 +61,6 @@ export NTHLAYER_GRAFANA_ORG_ID=1              # Default: 1
 export NTHLAYER_PROMETHEUS_URL=...
 export NTHLAYER_METRICS_USER=...              # If auth required
 export NTHLAYER_METRICS_PASSWORD=...
-
-# Slack - notifications
-export NTHLAYER_SLACK_WEBHOOK_URL=...
-
-# Environment detection
-export NTHLAYER_ENV=production                # production|staging|development
 ```
 
 ---

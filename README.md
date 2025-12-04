@@ -11,9 +11,9 @@
 
 Generate your complete reliability stack from a single service spec.
 
-[![Alpha](https://img.shields.io/badge/Status-Alpha-orange?style=flat-square)](https://github.com/rsionnach/nthlayer)
-[![PyPI](https://img.shields.io/pypi/v/nthlayer?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/nthlayer/)
-[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE.txt)
+[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge)](https://github.com/rsionnach/nthlayer)
+[![PyPI](https://img.shields.io/pypi/v/nthlayer?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/nthlayer/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE.txt)
 
 ---
 

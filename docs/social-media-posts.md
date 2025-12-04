@@ -29,15 +29,15 @@ Get automatically:
 - PagerDuty teams, escalation policies, services
 - Recording rules for performance
 
-Plus: Org-wide SLO Portfolio - see reliability health across all services:
+Plus: See reliability health across all your services:
 
     $ nthlayer portfolio
     Overall Health: 78% (14/18 SLOs meeting target)
     Critical: 5/6 healthy
     ! payment-api needs reliability investment
 
-This is the part PagerDuty can't give you - they want vendor lock-in.
-NthLayer works across your entire stack.
+Works with your existing tools - generates configs for Grafana, Prometheus,
+PagerDuty. No vendor lock-in.
 
 Live demo: https://rsionnach.github.io/nthlayer
 GitHub: https://github.com/rsionnach/nthlayer
@@ -63,7 +63,7 @@ all of it.
 - Define service once in YAML (name, tier, dependencies, SLOs)
 - Generate: Grafana dashboards, Prometheus alerts, PagerDuty setup, SLOs
 - Technology-aware: knows PostgreSQL, Redis, Kafka, etc. have different metrics
-- Org-wide SLO Portfolio: see reliability health across ALL services
+- See reliability health across all your services in one command
 
 **Example output for a payment-api service:**
 - 12-28 panel Grafana dashboard (based on dependencies)
@@ -71,13 +71,15 @@ all of it.
 - PagerDuty team, escalation policy, service (tier-based defaults)
 - SLO definitions with error budget tracking
 
-**The differentiator:** Cross-vendor SLO portfolio. PagerDuty can't give you
-this because they want vendor lock-in. NthLayer aggregates across Prometheus,
-Grafana, Datadog - whatever you use.
+**Bonus - org-wide visibility:**
 
     $ nthlayer portfolio
     Overall Health: 78% (14/18 SLOs meeting target)
+    Critical: 5/6 healthy
     ! payment-api needs reliability investment
+
+Works with your existing stack - generates configs for the tools you
+already use.
 
 **Live demo:** https://rsionnach.github.io/nthlayer
 
@@ -113,17 +115,18 @@ PagerDuty config, and tracks error budgets.
 - 400+ battle-tested Prometheus alerts
 - PagerDuty teams, escalation policies, services (tier-based defaults)
 - SLO definitions with error budget tracking
-- **Org-wide SLO Portfolio** - this is the differentiator
+- Org-wide reliability visibility
 
-**The Portfolio:**
-PagerDuty charges extra for their "Advance" AI features. Their SLO tools
-only work within PagerDuty. NthLayer gives you cross-vendor visibility:
+**See all your services at once:**
 
     $ nthlayer portfolio
     Overall Health: 78% (14/18 SLOs meeting target)
     Critical: 5/6 healthy
     ! payment-api needs reliability investment
     * user-api exceeds SLO - consider tier promotion
+
+Works with your existing stack - generates configs for the tools you already
+use (Grafana, Prometheus, PagerDuty).
 
 **What I'm looking for:**
 Early adopters to try it on real services. What breaks? What's missing?
@@ -145,24 +148,22 @@ NthLayer automates the reliability engineering work that every team does manuall
 - Prometheus alerts
 - PagerDuty teams, escalation policies, services
 - SLO definitions with error budgets
-- Org-wide reliability portfolio
 
 One YAML file → complete reliability stack.
 
 The idea came from watching teams spend 15-20 hours configuring monitoring
-for each new service. But the bigger problem? No visibility into org-wide
-reliability health.
+for each new service. Copy-paste JSON, tweak thresholds, set up PagerDuty,
+define SLOs. For every single service.
 
-That's why I built the SLO Portfolio:
+Now you can see all your services at once:
 
     $ nthlayer portfolio
     Overall Health: 78% (14/18 SLOs meeting target)
     Critical: 5/6 healthy
     ! payment-api needs reliability investment
 
-PagerDuty charges extra for their "Advance" features and locks you into their
-platform. NthLayer gives you cross-vendor visibility - Prometheus, Grafana,
-Datadog, whatever you use.
+Works with your existing tools - generates configs for Grafana, Prometheus,
+PagerDuty. No lock-in, fully open source.
 
 It's in early alpha and I'm looking for SRE/DevOps teams who want to try it.
 
@@ -172,7 +173,7 @@ It's in early alpha and I'm looking for SRE/DevOps teams who want to try it.
 
 What reliability work would you automate first?
 
-#SRE #DevOps #Observability #Prometheus #Grafana #PagerDuty #OpenSource
+#SRE #DevOps #Observability #Prometheus #Grafana #OpenSource
 ```
 
 ---
@@ -209,15 +210,15 @@ NthLayer generates all of this from a single YAML file.
 
 **Tweet 3:**
 ```
-The differentiator: Cross-vendor SLO Portfolio
-
-PagerDuty charges extra for "Advance" features and locks you in.
-NthLayer gives you org-wide visibility across ALL your tools:
+See all your services at once:
 
 $ nthlayer portfolio
 Overall Health: 78% (14/18 SLOs meeting target)
 Critical: 5/6 healthy
 ! payment-api needs reliability investment
+
+Works with your existing tools. Generates configs for Grafana, Prometheus,
+PagerDuty. No lock-in.
 ```
 
 **Tweet 4:**
@@ -277,15 +278,9 @@ DMs open for feedback!
 
 1. **"20 hours → 5 minutes"** - Concrete time savings
 2. **"One YAML file"** - Simplicity
-3. **"Cross-vendor SLO Portfolio"** - The differentiator PagerDuty can't offer
-4. **"PagerDuty teams, escalation policies, services"** - Be specific, not "routing"
+3. **"Works with your existing tools"** - Complementary, not competitive
+4. **"PagerDuty teams, escalation policies, services"** - Be specific about what's generated
 5. **"Technology-aware"** - Not just templates, actual intelligence
 6. **"Early alpha, seeking feedback"** - Set expectations, invite collaboration
 7. **"Live demo"** - Let them see before installing
-
-## Differentiator Talking Points
-
-- PagerDuty charges extra for "Advance" AI features
-- PagerDuty/Datadog SLO tools only work within their platform (vendor lock-in)
-- NthLayer gives cross-vendor visibility: Prometheus, Grafana, Datadog - whatever you use
-- Org-wide reliability health in one command: `nthlayer portfolio`
+8. **"No lock-in, open source"** - Generates configs you own

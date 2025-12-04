@@ -406,6 +406,82 @@ curl -X POST http://localhost:9090/-/reload</code></pre>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- PagerDuty Integration -->
+                        <div class="demo-showcase" style="margin-top: var(--spacing-xl);">
+                            <h4 class="showcase-title">📟 PagerDuty Integration</h4>
+                            <p class="dashboard-note">Complete incident response setup with tier-based escalation policies</p>
+                        </div>
+                        
+                        <div class="pagerduty-section">
+                            <div class="pd-feature-grid">
+                                <div class="pd-feature">
+                                    <div class="pd-feature-icon">👥</div>
+                                    <div class="pd-feature-content">
+                                        <h5>Team Management</h5>
+                                        <p>Auto-creates teams with manager roles assigned to API key owner</p>
+                                    </div>
+                                </div>
+                                <div class="pd-feature">
+                                    <div class="pd-feature-icon">📅</div>
+                                    <div class="pd-feature-content">
+                                        <h5>On-Call Schedules</h5>
+                                        <p>Primary, secondary, and manager schedules with weekly rotation</p>
+                                    </div>
+                                </div>
+                                <div class="pd-feature">
+                                    <div class="pd-feature-icon">⏱️</div>
+                                    <div class="pd-feature-content">
+                                        <h5>Tier-Based Timing</h5>
+                                        <p>Critical: 5→15→30min | High: 15→30→60min | Low: 60min only</p>
+                                    </div>
+                                </div>
+                                <div class="pd-feature">
+                                    <div class="pd-feature-icon">🔗</div>
+                                    <div class="pd-feature-content">
+                                        <h5>Service Linking</h5>
+                                        <p>Services linked to escalation policies with urgency settings</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pd-screenshots">
+                                <div class="pd-screenshot">
+                                    <img src="screenshots/pagerduty-team.png" alt="PagerDuty Team with Manager Role" onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'>📸 Team Screenshot<br><small>payments team with manager</small></div>'">
+                                    <p class="screenshot-caption">Team with manager role</p>
+                                </div>
+                                <div class="pd-screenshot">
+                                    <img src="screenshots/pagerduty-escalation.png" alt="Tier-Based Escalation Policy" onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'>📸 Escalation Policy<br><small>5/15/30min timing</small></div>'">
+                                    <p class="screenshot-caption">Tier-based escalation (5/15/30min)</p>
+                                </div>
+                                <div class="pd-screenshot">
+                                    <img src="screenshots/pagerduty-service.png" alt="PagerDuty Service Configuration" onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'>📸 Service<br><small>payment-api linked</small></div>'">
+                                    <p class="screenshot-caption">Service linked to policy</p>
+                                </div>
+                            </div>
+                            
+                            <div class="pd-support-models">
+                                <h5>Support Models</h5>
+                                <div class="support-model-grid">
+                                    <div class="support-model">
+                                        <span class="model-name">self</span>
+                                        <span class="model-desc">Team handles all alerts 24/7</span>
+                                    </div>
+                                    <div class="support-model">
+                                        <span class="model-name">shared</span>
+                                        <span class="model-desc">Team (day) + SRE (off-hours)</span>
+                                    </div>
+                                    <div class="support-model">
+                                        <span class="model-name">sre</span>
+                                        <span class="model-desc">SRE handles all alerts</span>
+                                    </div>
+                                    <div class="support-model">
+                                        <span class="model-name">business_hours</span>
+                                        <span class="model-desc">Team (9-5) + low-priority queue</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="value-callout" style="margin-top: var(--spacing-lg);">

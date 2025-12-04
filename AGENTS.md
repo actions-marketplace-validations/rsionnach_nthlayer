@@ -53,44 +53,57 @@ NthLayer is the "missing layer of reliability" - an automation platform that gen
 
 ## Roadmap
 
-### ResLayer Phase 1: Error Budget Foundation (🔨 CURRENT)
-**Goal:** "This deploy burned 8h of error budget"
-- `trellis-z6x`: OpenSLO parser and validator
-- `trellis-ygb`: Error budget calculator (30d rolling windows)
-- `trellis-0cp`: Prometheus SLI integration
-- `trellis-b54`: Time-series storage for budget tracking
-- `trellis-z2b`: Deploy → burn correlation engine
-- `trellis-deploy-correlation`: 3-factor confidence scoring
-- `trellis-yb5`: Deployment detection via ArgoCD
+### Strategic Differentiation
+**Compete where PagerDuty/Datadog won't go:**
+- Cross-vendor SLO Portfolio (they want lock-in)
+- AI-assisted config generation (they do incident response, not setup)
 
-### ResLayer Phase 2: Deployment Gates
+**Don't compete with:**
+- Incident pattern learning (PagerDuty Insights)
+- Automated incident response (PagerDuty SRE Agent)
+
+### Phase 1: Foundation (✅ DONE)
+- service.yaml spec and parser
+- Grafana dashboard generation
+- Prometheus alert generation
+- PagerDuty integration
+- pint PromQL linting
+
+### Phase 2: Error Budgets (✅ DONE)
+- `nthlayer slo show/list` - View SLOs from service.yaml
+- `nthlayer slo collect` - Real-time Prometheus queries (stateless)
+- Blame deferred until CI/CD integration
+
+### Phase 3: SLO Portfolio (🔨 NEXT - Differentiator)
+**Goal:** Cross-vendor, org-wide reliability portfolio
+- `trellis-portfolio-epic`: SLO Portfolio epic
+- `trellis-portfolio-aggregate`: `nthlayer portfolio` command
+- `trellis-portfolio-health`: Health scoring by tier
+- `trellis-portfolio-insights`: Actionable reliability insights
+- `trellis-portfolio-trends`: Local SQLite for historical data
+- `trellis-portfolio-web`: Local web dashboard
+- `trellis-portfolio-export`: JSON/CSV export for reporting
+
+### Phase 4: AI-Assisted Generation
+**Goal:** Conversational service.yaml creation (complements, doesn't compete with PD)
+- `trellis-ai-epic`: AI/MCP strategy
+- `trellis-mcp-server`: NthLayer as MCP tool for Claude/Cursor
+- `trellis-ai-spec-gen`: "Create a tier-1 API with Redis" → YAML
+- `trellis-ai-slo`: SLO target recommendations
+- `trellis-ai-suggestions`: Best practice recommendations
+
+### Phase 5: Deployment Gates (ResLayer Phase 2)
 **Goal:** Deploy blocked when error budget < 10%
-- `trellis-tnr`: Policy YAML DSL (conditions, actions)
-- `trellis-a4d`: Condition evaluator engine
-- `trellis-0fl`: ArgoCD deployment blocking
-- `trellis-mesh-discovery`: Istio/Linkerd dependency discovery
+- `trellis-tnr`: Policy YAML DSL
+- `trellis-a4d`: Condition evaluator
+- `trellis-0fl`: ArgoCD blocking
+- Requires CI/CD integration: ArgoCD, GitHub Actions, Tekton, GitLab CI
 
-### GovLayer: Policy Enforcement
-**Goal:** Governance guardrails for all services
-- `trellis-govlayer`: Policy engine epic
-- `trellis-policy-engine`: Core policy evaluation
-- `trellis-resource-limits`: Tier-based resource constraints
-- `trellis-approval-workflows`: Slack/Teams approval integration
-
-### ObserveLayer: Monitoring Automation
-**Goal:** Complete observability from service specs
-- `trellis-datadog`: Datadog integration epic
-- `trellis-datadog-monitors`: Monitor generation
-- `trellis-datadog-dashboards`: Dashboard generation
-- `trellis-cpx`: Runbook from service metadata
-- `trellis-meh`: Auto-generation with Mermaid diagrams
-
-### Service Catalog Integration
-**Goal:** Optional enrichment from existing catalogs
-- `trellis-catalog`: Catalog integration epic
-- `trellis-backstage-read`: Backstage API reader
-- `trellis-cortex-read`: Cortex API reader
-- `trellis-hybrid-mode`: Catalog + overrides
+### Phase 6: NthLayer Cloud (Future - Monetization)
+- Hosted portfolio dashboard
+- Multi-user / team views
+- Alerting on portfolio health
+- Enterprise features
 
 ### Technology Templates (Ongoing)
 - `trellis-0cd`: Kafka (consumer lag, partitions, replication)

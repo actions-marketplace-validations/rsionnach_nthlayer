@@ -386,9 +386,16 @@ _For more examples and detailed usage, please refer to the [Getting Started Guid
 - [x] PyPI release (0.1.0a1) - `pipx install nthlayer`
 
 ### Next Focus 🎯
-- [ ] **PagerDuty Integration** - Full end-to-end workflow, routing, escalation policies
 - [ ] Error Budget Foundation - OpenSLO parser, budget tracking, burn rate calculation
 - [ ] Interactive demo gallery improvements
+- [ ] Deployment gates with ArgoCD integration
+
+### Recently Completed ✅
+- [x] **PagerDuty Integration** - Tier-based escalation policies, team membership, Event Orchestration
+  - Auto-creates: Teams, Schedules (primary/secondary/manager), Escalation Policies, Services
+  - Tier-based timing: Critical (5/15/30min), High (15/30/60min), Medium (30/60min), Low (60min)
+  - Support models: self, shared, sre, business_hours
+  - Alertmanager config generation with PagerDuty receiver
 
 ### Coming Soon
 - [ ] Deployment policies & gates (ArgoCD integration)

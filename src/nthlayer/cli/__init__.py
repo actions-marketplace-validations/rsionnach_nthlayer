@@ -16,6 +16,7 @@ from nthlayer.cli.environments import (
 from nthlayer.cli.generate import generate_slo_command
 from nthlayer.cli.init import init_command
 from nthlayer.cli.pagerduty import setup_pagerduty_command
+from nthlayer.cli.portfolio import handle_portfolio_command, register_portfolio_parser
 from nthlayer.cli.recording_rules import generate_recording_rules_command
 from nthlayer.cli.slo import handle_slo_command, register_slo_parser
 from nthlayer.cli.templates import list_templates_command
@@ -39,4 +40,7 @@ __all__ = [
     # SLO commands
     "handle_slo_command",
     "register_slo_parser",
+    # Portfolio commands
+    "handle_portfolio_command",
+    "register_portfolio_parser",
 ]

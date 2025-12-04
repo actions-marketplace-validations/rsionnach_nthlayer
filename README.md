@@ -201,6 +201,15 @@ MIT - See [LICENSE.txt](LICENSE.txt)
 
 ## Acknowledgments
 
-- [grafana-foundation-sdk](https://github.com/grafana/grafana-foundation-sdk) - Dashboard generation
-- [awesome-prometheus-alerts](https://github.com/samber/awesome-prometheus-alerts) - Alert templates
+### Core Dependencies
+- [grafana-foundation-sdk](https://github.com/grafana/grafana-foundation-sdk) - Dashboard generation SDK (Apache 2.0)
+- [awesome-prometheus-alerts](https://github.com/samber/awesome-prometheus-alerts) - 580+ battle-tested alert rules (CC BY 4.0)
+
+### Architecture Inspiration
+- [autograf](https://github.com/FUSAKLA/autograf) - Dynamic Prometheus metric discovery
+- [Sloth](https://github.com/slok/sloth) - SLO specification and burn rate calculations
 - [OpenSLO](https://github.com/openslo/openslo) - SLO specification standard
+
+### Tooling
+- [Shields.io](https://shields.io/) - Badges
+- [Slidev](https://sli.dev/) - Presentation framework

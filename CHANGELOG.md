@@ -1,5 +1,24 @@
 # Changelog
 
+## Phase 4: PagerDuty Integration (December 2025)
+
+### Complete PagerDuty Integration
+- **Tier-based escalation policies** - Critical (5/15/30min), High (15/30/60min), Medium (30/60min), Low (60min)
+- **Auto-creates resources** - Teams, Schedules (primary/secondary/manager), Escalation Policies, Services
+- **Team membership** - API key owner automatically added as team manager
+- **Support models** - self, shared, sre, business_hours with routing labels
+- **Event Orchestration** - Alert routing for shared/sre support models
+- **Alertmanager config** - Auto-generated with PagerDuty receiver, tier-based timing
+- **Official SDK** - Uses `pagerduty.RestApiV2Client` (not bespoke HTTP client)
+- **Resilient setup** - Continues creating resources even if some fail
+- 38+ tests for PagerDuty and Alertmanager modules
+
+### CLI Improvements
+- Clean one-line per resource type output
+- Verbose mode (`--verbose`) for file list and details
+- Warnings grouped at end
+- Removed cluttery box drawing
+
 ## Phase 3: Observability Suite (December 2025)
 
 ### Phase 3D: Polish & Documentation

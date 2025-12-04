@@ -4,58 +4,97 @@ NthLayer is the "missing layer of reliability" - an automation platform that gen
 
 ## Product Vision & Scope
 
-NthLayer goes beyond just dashboards. The full platform includes:
+**Core Value Proposition:** "Generate the complete reliability stack from a service spec in 5 minutes"
 
-| Domain | What We Generate | Status |
-|--------|------------------|--------|
-| **Dashboards** | Grafana dashboards with intent-based panels, row organization | ✅ Complete |
-| **SLOs** | OpenSLO-compliant definitions, error budgets, burn rates | 🔨 In Progress |
-| **Alerts** | Prometheus alert rules, PagerDuty routing, Slack notifications | ✅ Complete |
-| **Recording Rules** | Pre-aggregated metrics for dashboard performance | ✅ Complete |
-| **Runbooks** | Auto-generated troubleshooting guides from service metadata | 📋 Planned |
-| **Deployment Gates** | ArgoCD/GitHub Actions blocking based on error budgets | 📋 Planned |
-| **Policies** | OPA/Sentinel policies, RBAC, network policies | 📋 Planned |
-| **Compliance** | SOC2 control mappings, audit logging, GDPR configs | 📋 Planned |
+### The Three Layers
 
-## Roadmap Phases
+```
+                    ┌─────────────────────────────────┐
+                    │     Git: services/*.yaml        │
+                    └───────────────┬─────────────────┘
+                                    │
+                    ┌───────────────▼─────────────────┐
+                    │       NthLayer Platform         │
+                    └───┬───────────┬───────────┬─────┘
+                        │           │           │
+            ┌───────────▼───┐ ┌─────▼─────┐ ┌───▼───────────┐
+            │   ResLayer    │ │ GovLayer  │ │ ObserveLayer  │
+            │ Error Budgets │ │  Policy   │ │  Monitoring   │
+            │    & SLOs     │ │Enforcement│ │  Automation   │
+            └───────┬───────┘ └─────┬─────┘ └───────┬───────┘
+                    │               │               │
+            ┌───────▼───────────────▼───────────────▼───────┐
+            │  Prometheus │ Grafana │ PagerDuty │ Datadog   │
+            └───────────────────────────────────────────────┘
+```
 
-### Phase 1-3: Foundation (✅ COMPLETE)
-- CLI framework, service specs, technology templates
-- Dashboard generation with Grafana SDK
-- Alert generation, recording rules
-- PagerDuty, Slack integrations
-- Live demo infrastructure (Fly.io + Grafana Cloud)
+### Usage Modes
 
-### Phase 4: Error Budget Foundation (🔨 CURRENT FOCUS)
+| Mode | Description | Catalog Required? |
+|------|-------------|-------------------|
+| **Standalone** | Git + YAML, no catalog | ❌ No - Start here |
+| **With Catalog** | Sync metadata from Backstage/Cortex | Optional |
+| **Hybrid** | Catalog + local overrides | Optional |
+
+**Key differentiator:** Catalogs make you adopt their platform first. NthLayer works Day 1.
+
+### What We Generate
+
+| Domain | Output | Status |
+|--------|--------|--------|
+| **Dashboards** | Grafana dashboards, Datadog dashboards | ✅ Grafana done, 📋 Datadog planned |
+| **Alerts** | Prometheus rules, Datadog monitors | ✅ Prometheus done, 📋 Datadog planned |
+| **Recording Rules** | Pre-aggregated metrics | ✅ Complete |
+| **PagerDuty** | Teams, schedules, escalation policies | ✅ Complete |
+| **SLOs** | OpenSLO definitions, error budgets | 🔨 ResLayer Phase 1 |
+| **Deployment Gates** | ArgoCD blocking, CI/CD integration | 📋 ResLayer Phase 2 |
+| **Policies** | Resource limits, deployment rules | 📋 GovLayer |
+| **Runbooks** | Auto-generated troubleshooting guides | 📋 ObserveLayer |
+
+## Roadmap
+
+### ResLayer Phase 1: Error Budget Foundation (🔨 CURRENT)
+**Goal:** "This deploy burned 8h of error budget"
 - `trellis-z6x`: OpenSLO parser and validator
-- `trellis-ygb`: Error budget calculator
+- `trellis-ygb`: Error budget calculator (30d rolling windows)
+- `trellis-0cp`: Prometheus SLI integration
 - `trellis-b54`: Time-series storage for budget tracking
 - `trellis-z2b`: Deploy → burn correlation engine
+- `trellis-deploy-correlation`: 3-factor confidence scoring
 - `trellis-yb5`: Deployment detection via ArgoCD
 
-### Phase 5: Intelligent Alerts & Scorecard
-- `trellis-4tu`: Alert engine with threshold-based rules
-- `trellis-9ri`: Template-based alert explanations
-- `trellis-0gr`: Reliability scorecard calculator
-- `trellis-6ue`: Anomaly detection alerts
-
-### Phase 6: Deployment Policies & Gates
-- `trellis-tnr`: Policy YAML DSL design
+### ResLayer Phase 2: Deployment Gates
+**Goal:** Deploy blocked when error budget < 10%
+- `trellis-tnr`: Policy YAML DSL (conditions, actions)
 - `trellis-a4d`: Condition evaluator engine
 - `trellis-0fl`: ArgoCD deployment blocking
-- `trellis-3ap`: Audit logging for policies
+- `trellis-mesh-discovery`: Istio/Linkerd dependency discovery
 
-### Phase 7: Documentation & Knowledge
-- `trellis-cpx`: Runbook generation from service metadata
-- `trellis-meh`: Runbook auto-generation
-- `trellis-cok`: Service documentation templates
-- `trellis-0a7`: Onboarding guide generation
+### GovLayer: Policy Enforcement
+**Goal:** Governance guardrails for all services
+- `trellis-govlayer`: Policy engine epic
+- `trellis-policy-engine`: Core policy evaluation
+- `trellis-resource-limits`: Tier-based resource constraints
+- `trellis-approval-workflows`: Slack/Teams approval integration
 
-### Future Phases
-- **Incident Management**: War room automation, post-incident automation
-- **Compliance & Governance**: SOC2 mappings, GDPR configs, IAM policies
-- **Cost Management**: Cost allocation, budget alerts
-- **Technology Expansion**: Kafka, MongoDB, RabbitMQ templates
+### ObserveLayer: Monitoring Automation
+**Goal:** Complete observability from service specs
+- `trellis-datadog`: Datadog integration epic
+- `trellis-datadog-monitors`: Monitor generation
+- `trellis-datadog-dashboards`: Dashboard generation
+- `trellis-cpx`: Runbook from service metadata
+- `trellis-meh`: Auto-generation with Mermaid diagrams
+
+### Service Catalog Integration
+**Goal:** Optional enrichment from existing catalogs
+- `trellis-catalog`: Catalog integration epic
+- `trellis-backstage-read`: Backstage API reader
+- `trellis-cortex-read`: Cortex API reader
+- `trellis-hybrid-mode`: Catalog + overrides
+
+### Technology Templates (Ongoing)
+- `trellis-0cd`: Kafka (consumer lag, partitions, replication)
+- `trellis-e8w`: MongoDB (connections, replication, locks)
 
 ## Core Commands
 
@@ -135,7 +174,7 @@ scripts/           → Utility scripts (validation, migration)
 
 ### PromQL Query Patterns
 - Always use `service="$service"` label selector (NOT `cluster` or other labels)
-- histogram_quantile MUST include `sum by (le)`: 
+- histogram_quantile MUST include `sum by (le)`:
   ```promql
   histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{service="$service"}[5m])))
   ```
@@ -147,6 +186,22 @@ scripts/           → Utility scripts (validation, migration)
 - Use `structlog` for logging
 - Prefer composition over inheritance
 - Tests first when fixing bugs
+
+### External Service SDKs (CRITICAL)
+Always use official SDKs/clients for external service integrations. Do not create bespoke HTTP clients when official libraries exist.
+
+| Service | Official SDK | Package |
+|---------|--------------|---------|
+| **PagerDuty** | `pagerduty` | `pagerduty>=6.0.0` |
+| **Grafana** | `grafana-foundation-sdk` | `grafana-foundation-sdk>=0.0.11` |
+| **AWS** | `boto3` / `aioboto3` | `boto3>=1.34.0` |
+| **Slack** | `slack_sdk` | (add when needed) |
+
+When integrating a new external service:
+1. Research if an official SDK exists
+2. If yes, add to `pyproject.toml` and use it
+3. If no official SDK, check for well-maintained community libraries
+4. Only create custom HTTP clients as a last resort
 
 ### Technology Templates
 When adding a new database/cache template:
@@ -201,7 +256,7 @@ Check `.beads/issues.jsonl` for the latest priorities. Key epics:
 
 ### Technology Templates to Add
 - `trellis-0cd`: Kafka
-- `trellis-e8w`: MongoDB  
+- `trellis-e8w`: MongoDB
 - `trellis-ys8`: RabbitMQ
 - `trellis-uum`: Elasticsearch (✅ done)
 

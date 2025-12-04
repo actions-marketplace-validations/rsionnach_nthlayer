@@ -416,9 +416,10 @@ layout: default
 <div v-click class="p-4 border-2 border-red-500 rounded bg-gray-800">
 
 ### 📞 Incident Response
-- PagerDuty services & teams
-- Escalation policies
-- Runbook templates
+- PagerDuty teams with manager roles
+- Tier-based escalation policies
+- Primary/secondary/manager schedules
+- Alertmanager integration
 
 </div>
 
@@ -1069,9 +1070,11 @@ nthlayer setup-pagerduty payment-api.yaml
    • 12 redis alerts
    • All customized with service labels
 
-✅ PagerDuty service created:
-   • High-urgency escalation
-   • Linked to payments team
+✅ PagerDuty configured:
+   • Team with manager role
+   • 3 schedules (primary/secondary/manager)
+   • Tier-based escalation (5/15/30min for critical)
+   • Service linked to escalation policy
 
 ✅ Ready to deploy in < 5 minutes
 ```

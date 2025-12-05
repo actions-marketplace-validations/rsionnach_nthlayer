@@ -238,6 +238,24 @@ When adding a new database/cache template:
 3. Commit messages: `<type>: <description>` (e.g., `fix: Add sum by (le) to histogram queries`)
 4. Update `.beads/issues.jsonl` when completing tasks
 
+## Beads Issue Tracking
+
+**Always update `.beads/issues.jsonl` when:**
+1. **Starting work** on a feature/improvement not already tracked - create a new issue
+2. **Completing work** - close the issue with `status: "closed"` and `close_reason`
+3. **Discovering new work** during implementation - add new issues for follow-ups
+
+**Issue format (JSONL - one JSON object per line):**
+```json
+{"id":"trellis-xxx","title":"Feature title","description":"What was done","status":"closed","priority":0,"issue_type":"feature","created_at":"2025-12-05T12:00:00Z","updated_at":"2025-12-05T12:00:00Z","closed_at":"2025-12-05T12:00:00Z","close_reason":"Complete: brief summary"}
+```
+
+**Priority levels:** 0 (highest) → 3 (lowest)
+**Issue types:** `epic`, `feature`, `task`
+**Status:** `open`, `in_progress`, `closed`
+
+**Key principle:** If you're doing significant work, it should be tracked in beads. This ensures roadmap visibility and historical record of changes.
+
 ## PyPI Releases
 
 **Cadence:** Monthly releases + hotfixes as needed

@@ -238,6 +238,46 @@ When adding a new database/cache template:
 3. Commit messages: `<type>: <description>` (e.g., `fix: Add sum by (le) to histogram queries`)
 4. Update `.beads/issues.jsonl` when completing tasks
 
+## PyPI Releases
+
+**Cadence:** Monthly releases + hotfixes as needed
+
+**Versioning:** `0.X.Y` (pre-1.0 alpha)
+- X = Feature releases (monthly)
+- Y = Patches/hotfixes (as needed)
+
+**Release Process (uses Trusted Publishing - no tokens needed):**
+
+```bash
+# 1. Update version in pyproject.toml
+# Example: "0.1.0a1" → "0.1.0a2"
+
+# 2. Update CHANGELOG.md with changes
+
+# 3. Commit and tag
+git add pyproject.toml CHANGELOG.md
+git commit -m "release: vX.Y.Z"
+git tag -a vX.Y.Z -m "Release vX.Y.Z - description"
+
+# 4. Push to GitHub
+git push origin develop
+git push origin vX.Y.Z
+
+# 5. Create GitHub Release (triggers PyPI publish)
+gh release create vX.Y.Z --title "vX.Y.Z - Title" --notes "Release notes here"
+```
+
+**What happens automatically:**
+- `.github/workflows/release.yml` triggers on release publish
+- Builds package with `python -m build`
+- Publishes to PyPI via trusted publishing (no API token needed)
+- Trusted publisher configured at: https://pypi.org/manage/project/nthlayer/settings/publishing/
+
+**Verify release:**
+```bash
+pip install nthlayer==X.Y.Z
+```
+
 ## Testing Requirements
 
 Before completing any task:

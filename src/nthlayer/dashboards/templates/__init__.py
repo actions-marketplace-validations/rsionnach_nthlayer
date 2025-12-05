@@ -15,7 +15,9 @@ from nthlayer.dashboards.templates.kafka_intent import KafkaIntentTemplate
 from nthlayer.dashboards.templates.kubernetes import KubernetesTemplate  # No intent version yet
 from nthlayer.dashboards.templates.mongodb_intent import MongoDBIntentTemplate
 from nthlayer.dashboards.templates.mysql_intent import MySQLIntentTemplate
+from nthlayer.dashboards.templates.nginx_intent import NginxIntentTemplate
 from nthlayer.dashboards.templates.postgresql_intent import PostgreSQLIntentTemplate
+from nthlayer.dashboards.templates.rabbitmq_intent import RabbitmqIntentTemplate
 from nthlayer.dashboards.templates.redis_intent import RedisIntentTemplate
 from nthlayer.dashboards.templates.stream_intent import StreamIntentTemplate
 from nthlayer.dashboards.templates.worker_intent import WorkerIntentTemplate
@@ -32,6 +34,8 @@ ElasticsearchTemplate = ElasticsearchIntentTemplate
 TECHNOLOGY_TEMPLATES: Dict[str, Type[TechnologyTemplate]] = {
     "postgres": PostgreSQLIntentTemplate,
     "postgresql": PostgreSQLIntentTemplate,
+    "mysql": MySQLIntentTemplate,
+    "mariadb": MySQLIntentTemplate,
     "redis": RedisIntentTemplate,
     "kubernetes": KubernetesTemplate,
     "k8s": KubernetesTemplate,
@@ -42,6 +46,9 @@ TECHNOLOGY_TEMPLATES: Dict[str, Type[TechnologyTemplate]] = {
     "kafka": KafkaIntentTemplate,
     "elasticsearch": ElasticsearchIntentTemplate,
     "elastic": ElasticsearchIntentTemplate,
+    "rabbitmq": RabbitmqIntentTemplate,
+    "rabbit": RabbitmqIntentTemplate,
+    "nginx": NginxIntentTemplate,
 }
 
 
@@ -89,6 +96,8 @@ __all__ = [
     "MongoDBIntentTemplate",
     "KafkaIntentTemplate",
     "ElasticsearchIntentTemplate",
+    "RabbitmqIntentTemplate",
+    "NginxIntentTemplate",
     "KubernetesTemplate",  # No intent version yet
     # Backwards compatibility aliases
     "PostgreSQLTemplate",

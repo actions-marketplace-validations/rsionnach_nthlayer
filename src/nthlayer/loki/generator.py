@@ -342,7 +342,7 @@ def generate_loki_alerts_for_service_file(
         service_type=context.type,
         dependencies=dependencies,
         tier=context.tier,
-        labels={"team": context.owner} if context.owner else {},
+        labels={"team": context.team} if context.team else {},
     )
 
     output_path = None

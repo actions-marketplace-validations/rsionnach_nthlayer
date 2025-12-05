@@ -55,7 +55,7 @@ def generate_loki_command(
             service_type=context.type,
             dependencies=dependencies,
             tier=context.tier,
-            labels={"team": context.owner} if context.owner else {},
+            labels={"team": context.team} if context.team else {},
         )
 
         print(f"Service: {context.name}")

@@ -1,18 +1,99 @@
 """Tests for Portfolio CLI commands.
 
-Tests for nthlayer portfolio command.
+Tests for nthlayer portfolio command and portfolio module.
 """
 
-import os
 import tempfile
 from pathlib import Path
 
+from nthlayer.portfolio import (
+    HealthStatus,
+    InsightType,
+    PortfolioAggregator,
+    PortfolioHealth,
+    ServiceHealth,
+    SLOHealth,
+    TierHealth,
+    collect_portfolio,
+)
 
-class TestPortfolioCommand:
-    """Tests for nthlayer portfolio command."""
 
-    def test_portfolio_discovers_services(self):
-        """Test that portfolio discovers services with SLOs."""
+class TestPortfolioModels:
+    """Tests for portfolio data models."""
+
+    def test_slo_health_to_dict(self):
+        """Test SLOHealth serialization."""
+        slo = SLOHealth(
+            name="availability",
+            objective=99.95,
+            window="30d",
+            status=HealthStatus.HEALTHY,
+        )
+        data = slo.to_dict()
+        assert data["name"] == "availability"
+        assert data["objective"] == 99.95
+        assert data["status"] == "healthy"
+
+    def test_service_health_calculates_worst_status(self):
+        """Test ServiceHealth calculates overall status from SLOs."""
+        slos = [
+            SLOHealth(name="slo1", objective=99.9, window="30d", status=HealthStatus.HEALTHY),
+            SLOHealth(name="slo2", objective=99.0, window="30d", status=HealthStatus.WARNING),
+        ]
+        svc = ServiceHealth(
+            service="test-service",
+            tier=1,
+            team="test",
+            service_type="api",
+            slos=slos,
+        )
+        assert svc.overall_status == HealthStatus.WARNING
+        assert svc.needs_attention is True
+
+    def test_service_health_healthy_when_all_slos_healthy(self):
+        """Test ServiceHealth is healthy when all SLOs are healthy."""
+        slos = [
+            SLOHealth(name="slo1", objective=99.9, window="30d", status=HealthStatus.HEALTHY),
+            SLOHealth(name="slo2", objective=99.0, window="30d", status=HealthStatus.HEALTHY),
+        ]
+        svc = ServiceHealth(
+            service="test-service",
+            tier=1,
+            team="test",
+            service_type="api",
+            slos=slos,
+        )
+        assert svc.overall_status == HealthStatus.HEALTHY
+        assert svc.is_healthy is True
+
+    def test_tier_health_percentage(self):
+        """Test TierHealth calculates percentage correctly."""
+        tier = TierHealth(
+            tier=1,
+            tier_name="Critical",
+            total_services=10,
+            healthy_services=8,
+        )
+        assert tier.health_percent == 80.0
+
+    def test_portfolio_health_org_percentage(self):
+        """Test PortfolioHealth calculates org health."""
+        from datetime import datetime
+
+        portfolio = PortfolioHealth(
+            timestamp=datetime.utcnow(),
+            total_services=10,
+            services_with_slos=8,
+            healthy_services=6,
+        )
+        assert portfolio.org_health_percent == 75.0
+
+
+class TestPortfolioAggregator:
+    """Tests for portfolio aggregation."""
+
+    def test_aggregator_discovers_services(self):
+        """Test that aggregator discovers services with SLOs."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
@@ -24,7 +105,7 @@ class TestPortfolioCommand:
 service:
   name: payment-api
   team: payments
-  tier: critical
+  tier: 1
   type: api
 
 resources:
@@ -39,7 +120,7 @@ resources:
 service:
   name: search-api
   team: search
-  tier: standard
+  tier: 2
   type: api
 
 resources:
@@ -50,139 +131,100 @@ resources:
       window: 30d
 """)
 
-            old_cwd = os.getcwd()
-            try:
-                os.chdir(tmpdir)
-                from nthlayer.cli.portfolio import _discover_services_with_slos
+            aggregator = PortfolioAggregator(search_paths=[services_dir])
+            portfolio = aggregator.collect()
 
-                services = _discover_services_with_slos()
-                assert len(services) == 2
-                names = {s["name"] for s in services}
-                assert "payment-api" in names
-                assert "search-api" in names
-            finally:
-                os.chdir(old_cwd)
+            assert portfolio.total_services == 2
+            assert portfolio.services_with_slos == 2
+            names = {s.service for s in portfolio.services}
+            assert "payment-api" in names
+            assert "search-api" in names
 
-    def test_portfolio_calculates_health(self):
-        """Test that portfolio calculates health correctly."""
-        from nthlayer.cli.portfolio import _calculate_portfolio_health
-
-        results = [
-            {
-                "name": "service-a",
-                "tier": "critical",
-                "team": "team-a",
-                "slos": [
-                    {
-                        "name": "availability",
-                        "objective": 99.9,
-                        "status": "HEALTHY",
-                        "healthy": True,
-                        "burned_minutes": 10,
-                        "percent_consumed": 20,
-                    },
-                    {
-                        "name": "latency",
-                        "objective": 99.0,
-                        "status": "WARNING",
-                        "healthy": False,
-                        "burned_minutes": 300,
-                        "percent_consumed": 60,
-                    },
-                ],
-            },
-            {
-                "name": "service-b",
-                "tier": "standard",
-                "team": "team-b",
-                "slos": [
-                    {
-                        "name": "availability",
-                        "objective": 99.5,
-                        "status": "HEALTHY",
-                        "healthy": True,
-                        "burned_minutes": 5,
-                        "percent_consumed": 10,
-                    },
-                ],
-            },
-        ]
-
-        portfolio = _calculate_portfolio_health(results)
-
-        assert portfolio["total_services"] == 2
-        assert portfolio["total_slos"] == 3
-        assert portfolio["healthy_slos"] == 2
-        assert portfolio["health_percent"] == (2 / 3) * 100
-
-    def test_portfolio_groups_by_tier(self):
-        """Test that portfolio groups services by tier."""
-        from nthlayer.cli.portfolio import _calculate_portfolio_health
-
-        results = [
-            {
-                "name": "critical-svc",
-                "tier": "critical",
-                "team": "team",
-                "slos": [{"name": "slo", "status": "HEALTHY", "healthy": True}],
-            },
-            {
-                "name": "standard-svc",
-                "tier": "standard",
-                "team": "team",
-                "slos": [{"name": "slo", "status": "HEALTHY", "healthy": True}],
-            },
-            {
-                "name": "low-svc",
-                "tier": "low",
-                "team": "team",
-                "slos": [{"name": "slo", "status": "WARNING", "healthy": False}],
-            },
-        ]
-
-        portfolio = _calculate_portfolio_health(results)
-
-        assert "critical" in portfolio["by_tier"]
-        assert "standard" in portfolio["by_tier"]
-        assert "low" in portfolio["by_tier"]
-        assert portfolio["by_tier"]["critical"]["healthy"] == 1
-        assert portfolio["by_tier"]["low"]["healthy"] == 0
-
-    def test_portfolio_generates_insights(self):
-        """Test that portfolio generates actionable insights."""
-        from nthlayer.cli.portfolio import _generate_insights
-
-        results = [
-            {
-                "name": "exhausted-svc",
-                "tier": "critical",
-                "slos": [
-                    {"name": "slo", "status": "EXHAUSTED", "percent_consumed": 150},
-                ],
-            },
-            {
-                "name": "healthy-svc",
-                "tier": "standard",
-                "slos": [
-                    {"name": "slo", "status": "HEALTHY", "percent_consumed": 10},
-                ],
-            },
-        ]
-
-        insights = _generate_insights(results, {})
-
-        assert len(insights) >= 1
-        exhausted_insight = next(
-            (i for i in insights if "exhausted" in i["message"].lower()), None
-        )
-        assert exhausted_insight is not None
-        assert exhausted_insight["type"] == "critical"
-
-    def test_portfolio_command_skip_collect(self):
-        """Test portfolio command with --skip-collect."""
+    def test_aggregator_groups_by_tier(self):
+        """Test that aggregator groups services by tier."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
+            services_dir = tmpdir / "services"
+            services_dir.mkdir()
 
+            (services_dir / "critical-svc.yaml").write_text("""
+service:
+  name: critical-svc
+  team: team
+  tier: 1
+  type: api
+
+resources:
+  - kind: SLO
+    name: slo
+    spec:
+      objective: 99.9
+      window: 30d
+""")
+
+            (services_dir / "standard-svc.yaml").write_text("""
+service:
+  name: standard-svc
+  team: team
+  tier: 2
+  type: api
+
+resources:
+  - kind: SLO
+    name: slo
+    spec:
+      objective: 99.5
+      window: 30d
+""")
+
+            aggregator = PortfolioAggregator(search_paths=[services_dir])
+            portfolio = aggregator.collect()
+
+            assert len(portfolio.by_tier) == 2
+            tier_nums = {t.tier for t in portfolio.by_tier}
+            assert 1 in tier_nums
+            assert 2 in tier_nums
+
+    def test_aggregator_handles_empty_directory(self):
+        """Test aggregator handles empty directory gracefully."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            aggregator = PortfolioAggregator(search_paths=[Path(tmpdir)])
+            portfolio = aggregator.collect()
+
+            assert portfolio.total_services == 0
+            assert portfolio.services_with_slos == 0
+
+    def test_aggregator_generates_no_slo_insight(self):
+        """Test aggregator generates insight for services without SLOs."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            services_dir = tmpdir / "services"
+            services_dir.mkdir()
+
+            (services_dir / "no-slo-svc.yaml").write_text("""
+service:
+  name: no-slo-svc
+  team: team
+  tier: 1
+  type: api
+
+resources: []
+""")
+
+            aggregator = PortfolioAggregator(search_paths=[services_dir])
+            portfolio = aggregator.collect()
+
+            no_slo_insights = [i for i in portfolio.insights if i.type == InsightType.NO_SLO]
+            assert len(no_slo_insights) == 1
+
+
+class TestPortfolioCommand:
+    """Tests for nthlayer portfolio CLI command."""
+
+    def test_portfolio_command_runs(self):
+        """Test portfolio command runs without error."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
             services_dir = tmpdir / "services"
             services_dir.mkdir()
 
@@ -190,7 +232,7 @@ resources:
 service:
   name: test-service
   team: test
-  tier: critical
+  tier: 1
   type: api
 
 resources:
@@ -201,48 +243,44 @@ resources:
       window: 30d
 """)
 
-            old_cwd = os.getcwd()
-            try:
-                os.chdir(tmpdir)
-                from nthlayer.cli.portfolio import portfolio_command
+            from nthlayer.cli.portfolio import portfolio_command
 
-                result = portfolio_command(skip_collect=True)
-                assert result == 0
-            finally:
-                os.chdir(old_cwd)
+            result = portfolio_command(search_paths=[str(services_dir)])
+            assert result == 0
 
-    def test_portfolio_handles_empty_services(self):
+    def test_portfolio_command_empty(self):
         """Test portfolio handles no services gracefully."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            old_cwd = os.getcwd()
-            try:
-                os.chdir(tmpdir)
-                from nthlayer.cli.portfolio import portfolio_command
+            from nthlayer.cli.portfolio import portfolio_command
 
-                result = portfolio_command(skip_collect=True)
-                assert result == 0
-            finally:
-                os.chdir(old_cwd)
+            result = portfolio_command(search_paths=[tmpdir])
+            assert result == 0
 
+    def test_portfolio_json_export(self):
+        """Test portfolio JSON export."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            services_dir = tmpdir / "services"
+            services_dir.mkdir()
 
-class TestWindowParsing:
-    """Tests for window parsing in portfolio."""
+            (services_dir / "test-service.yaml").write_text("""
+service:
+  name: test-service
+  team: test
+  tier: 1
+  type: api
 
-    def test_parse_days(self):
-        """Test parsing day windows."""
-        from nthlayer.cli.portfolio import _parse_window_minutes
+resources:
+  - kind: SLO
+    name: availability
+    spec:
+      objective: 99.9
+      window: 30d
+""")
 
-        assert _parse_window_minutes("30d") == 30 * 24 * 60
-        assert _parse_window_minutes("7d") == 7 * 24 * 60
+            portfolio = collect_portfolio([str(services_dir)])
+            data = portfolio.to_dict()
 
-    def test_parse_hours(self):
-        """Test parsing hour windows."""
-        from nthlayer.cli.portfolio import _parse_window_minutes
-
-        assert _parse_window_minutes("24h") == 24 * 60
-
-    def test_parse_weeks(self):
-        """Test parsing week windows."""
-        from nthlayer.cli.portfolio import _parse_window_minutes
-
-        assert _parse_window_minutes("1w") == 7 * 24 * 60
+            assert "timestamp" in data
+            assert "summary" in data
+            assert data["summary"]["total_services"] == 1

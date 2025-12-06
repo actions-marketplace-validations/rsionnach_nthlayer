@@ -1,4 +1,4 @@
-.PHONY: help dev-up dev-down dev-logs test test-cov lint typecheck format clean demo-reconcile mock-server
+.PHONY: help dev-up dev-down dev-logs test test-cov lint typecheck format clean demo-reconcile mock-server docs docs-serve
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -118,3 +118,13 @@ setup: dev-up install-dev migrate ## Complete setup: start services, install dep
 	@echo "  make mock-server   # Start mock APIs"
 	@echo "  make demo-reconcile # See demo workflow"
 	@echo "  make api           # Start NthLayer API"
+
+# Documentation
+docs: ## Build documentation site
+	.venv/bin/mkdocs build || mkdocs build
+	mkdir -p docs/demo
+	cp -r docs-site/demo/* docs/demo/
+	@echo "✅ Documentation built to docs/"
+
+docs-serve: ## Serve documentation locally
+	.venv/bin/mkdocs serve || mkdocs serve

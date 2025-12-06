@@ -3,6 +3,7 @@ site_url: https://rsionnach.github.io/nthlayer/
 site_description: Generate your complete reliability stack from a single service spec
 site_author: NthLayer
 docs_dir: docs-site
+site_dir: docs
 
 repo_name: rsionnach/nthlayer
 repo_url: https://github.com/rsionnach/nthlayer
@@ -54,6 +55,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Live Demo: demo.md
   - Getting Started:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quick-start.md

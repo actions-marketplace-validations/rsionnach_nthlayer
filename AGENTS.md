@@ -9,28 +9,30 @@ NthLayer is the "missing layer of reliability" - an automation platform that gen
 ### The Three Layers
 
 ```mermaid
-architecture-beta
-    group git(disk)[Git Repository]
-    group nthlayer(server)[NthLayer Platform]
-    group observability(cloud)[Observability Stack]
+flowchart TB
+    subgraph Git["Git Repository"]
+        specs["services/*.yaml"]
+    end
 
-    service specs(disk)[services/*.yaml] in git
+    subgraph NthLayer["NthLayer Platform"]
+        reslayer["ResLayer - SLOs & Error Budgets"]
+        govlayer["GovLayer - Policy Enforcement"]
+        obslayer["ObserveLayer - Monitoring"]
+    end
 
-    service reslayer(server)[ResLayer - SLOs] in nthlayer
-    service govlayer(server)[GovLayer - Policy] in nthlayer
-    service obslayer(server)[ObserveLayer - Monitoring] in nthlayer
+    subgraph Observability["Observability Stack"]
+        prometheus["Prometheus"]
+        grafana["Grafana"]
+        pagerduty["PagerDuty"]
+    end
 
-    service prometheus(database)[Prometheus] in observability
-    service grafana(server)[Grafana] in observability
-    service pagerduty(cloud)[PagerDuty] in observability
+    specs --> reslayer
+    specs --> govlayer
+    specs --> obslayer
 
-    specs:R --> L:reslayer
-    specs:R --> L:govlayer
-    specs:R --> L:obslayer
-
-    reslayer:B --> T:prometheus
-    obslayer:B --> T:grafana
-    obslayer:B --> T:pagerduty
+    reslayer --> prometheus
+    obslayer --> grafana
+    obslayer --> pagerduty
 ```
 
 > **See also:** [Full Architecture Documentation](docs-site/architecture.md) for detailed diagrams of workflows and integrations.

@@ -122,8 +122,6 @@ setup: dev-up install-dev migrate ## Complete setup: start services, install dep
 # Documentation
 docs: ## Build documentation site
 	.venv/bin/mkdocs build || mkdocs build
-	mkdir -p docs/demo
-	cp -r docs-site/demo/* docs/demo/
 	@echo "✅ Documentation built to docs/"
 
 docs-serve: ## Serve documentation locally

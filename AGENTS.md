@@ -54,13 +54,17 @@ NthLayer is the "missing layer of reliability" - an automation platform that gen
 ## Roadmap
 
 ### Strategic Differentiation
-**Compete where PagerDuty/Datadog won't go:**
+**Current focus - Compete where PagerDuty/Datadog won't go:**
 - Cross-vendor SLO Portfolio (they want lock-in)
 - AI-assisted config generation (they do incident response, not setup)
 
-**Don't compete with:**
+**Don't compete with (for now):**
 - Incident pattern learning (PagerDuty Insights)
 - Automated incident response (PagerDuty SRE Agent)
+
+**Future consideration (Phase 7):**
+- Adaptive alert tuning, deployment risk scoring, closed-loop policies
+- Decision point: Review after Phase 5 completion
 
 ### Phase 1: Foundation (✅ DONE)
 - service.yaml spec and parser
@@ -110,6 +114,27 @@ NthLayer is the "missing layer of reliability" - an automation platform that gen
 - Multi-user / team views
 - Alerting on portfolio health
 - Enterprise features
+
+### Phase 7: Intelligent Reliability (Future - "New Class")
+**Goal:** Adaptive, learning reliability automation - transform from generation tool to intelligent platform
+
+- `trellis-adaptive-alerts`: Adaptive Alert Tuning
+  - Baseline learning from historical metrics
+  - Auto-adjust thresholds based on seasonality
+  - Anomaly-aware alerting (reduce noise)
+
+- `trellis-deploy-risk`: Deployment Risk Scoring
+  - ML model: error budget state + deploy history → risk score
+  - Pre-deploy risk assessment
+  - Integration with deployment gates (Phase 5)
+
+- `trellis-closed-loop`: Closed-Loop Policy Updates
+  - Auto-adjust SLO targets based on actual performance
+  - Suggest tier promotions/demotions
+  - Policy drift detection and correction
+
+**Prerequisites:** Phase 4 (AI foundation), Phase 5 (deployment gates)
+**Decision point:** Review after Phase 5 - compete or complement PagerDuty?
 
 ### Technology Templates (Ongoing)
 - `trellis-0cd`: Kafka (consumer lag, partitions, replication)

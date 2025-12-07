@@ -4,8 +4,6 @@
 
 Output demo/vhs/nthlayer-apply.gif
 
-Require nthlayer
-
 Set Shell "bash"
 Set FontSize 15
 Set Width 800
@@ -19,8 +17,8 @@ Type "cat examples/services/checkout-service.yaml"
 Enter
 Sleep 3s
 
-# Run nthlayer apply
-Type "nthlayer apply examples/services/checkout-service.yaml"
+# Run nthlayer apply (using local venv)
+Type ".venv/bin/nthlayer apply examples/services/checkout-service.yaml"
 Enter
 Sleep 2s
 

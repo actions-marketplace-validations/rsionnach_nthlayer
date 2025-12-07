@@ -6,9 +6,9 @@ Output apply-demo.gif
 Require nthlayer
 
 Set Shell "bash"
-Set FontSize 16
-Set Width 900
-Set Height 550
+Set FontSize 15
+Set Width 800
+Set Height 500
 Set Theme "Dracula"
 Set Padding 20
 Set Framerate 30
@@ -16,12 +16,14 @@ Set Framerate 30
 # Show the service spec
 Type "cat service.yaml"
 Enter
-Sleep 1500ms
+Sleep 2s
 
 # Run nthlayer apply
 Type "nthlayer apply service.yaml"
 Enter
-Sleep 3s
+Sleep 2s
 
-# Let user see the output
+# Show generated files
+Type "ls generated/payment-api/"
+Enter
 Sleep 2s

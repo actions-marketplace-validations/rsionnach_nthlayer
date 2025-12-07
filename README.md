@@ -1,10 +1,11 @@
-<!-- GIF placeholder: nthlayer apply → files generated → dashboard -->
-<!-- TODO: Add CLI demo GIF here -->
-
 <div align="center">
   <a href="https://github.com/rsionnach/nthlayer">
     <img src="presentations/public/nthlayer_dark_banner.png" alt="NthLayer" width="400">
   </a>
+
+  <br><br>
+
+  <img src="demo/vhs/apply-demo.gif" alt="nthlayer apply demo" width="700">
 </div>
 
 # NthLayer
@@ -80,6 +81,10 @@ export NTHLAYER_METRICS_PASSWORD=...
 ## 📊 SLO Portfolio
 
 Track reliability across your entire organization:
+
+<div align="center">
+  <img src="demo/vhs/portfolio-demo.gif" alt="nthlayer portfolio demo" width="700">
+</div>
 
 ```bash
 $ nthlayer portfolio

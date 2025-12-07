@@ -1,4 +1,4 @@
-.PHONY: help dev-up dev-down dev-logs test test-cov lint typecheck format clean demo-reconcile mock-server docs docs-serve
+.PHONY: help dev-up dev-down dev-logs test test-cov lint typecheck format clean demo-reconcile mock-server docs docs-serve demo-gifs
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -126,3 +126,12 @@ docs: ## Build documentation site
 
 docs-serve: ## Serve documentation locally
 	.venv/bin/mkdocs serve || mkdocs serve
+
+# Demo GIFs (requires VHS: https://github.com/charmbracelet/vhs)
+demo-gifs: ## Generate CLI demo GIFs using VHS
+	@echo "Generating CLI demo GIFs..."
+	cd demo/vhs && vhs apply-demo.tape
+	cd demo/vhs && vhs portfolio-demo.tape
+	cd demo/vhs && vhs plan-demo.tape
+	cd demo/vhs && vhs slo-demo.tape
+	@echo "✅ Demo GIFs generated in demo/vhs/"

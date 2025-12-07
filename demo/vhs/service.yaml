@@ -1,0 +1,9 @@
+service:
+  name: payment-api
+  team: payments
+  tier: critical
+  type: api
+
+dependencies:
+  - postgresql
+  - redis

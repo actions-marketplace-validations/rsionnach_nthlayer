@@ -178,9 +178,7 @@ def slo_collect_command(
 ) -> int:
     """Collect metrics from Prometheus and calculate error budget."""
     # Get Prometheus URL from env or arg
-    prom_url = prometheus_url or os.environ.get(
-        "NTHLAYER_PROMETHEUS_URL", "http://localhost:9090"
-    )
+    prom_url = prometheus_url or os.environ.get("NTHLAYER_PROMETHEUS_URL", "http://localhost:9090")
 
     print()
     print("=" * 60)
@@ -252,7 +250,11 @@ async def _collect_slo_metrics(
     """Query Prometheus for SLO metrics."""
     from nthlayer.providers.prometheus import PrometheusProvider, PrometheusProviderError
 
-    provider = PrometheusProvider(prometheus_url)
+    # Get auth credentials from environment (for Grafana Cloud, etc.)
+    username = os.environ.get("NTHLAYER_METRICS_USER")
+    password = os.environ.get("NTHLAYER_METRICS_PASSWORD")
+
+    provider = PrometheusProvider(prometheus_url, username=username, password=password)
     results = []
 
     for slo in slo_resources:

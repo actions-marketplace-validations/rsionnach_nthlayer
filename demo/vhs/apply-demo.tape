@@ -8,7 +8,7 @@ Set Shell "bash"
 Set FontFamily "Menlo"
 Set FontSize 15
 Set Width 800
-Set Height 500
+Set Height 550
 Set Theme "Dracula"
 Set Padding 20
 Set Framerate 30
@@ -16,14 +16,14 @@ Set Framerate 30
 # Show a real service spec from examples
 Type "cat examples/services/checkout-service.yaml"
 Enter
-Sleep 3s
+Sleep 4s
 
-# Run nthlayer apply (using local venv)
+# Run nthlayer apply
 Type ".venv/bin/nthlayer apply examples/services/checkout-service.yaml"
 Enter
-Sleep 2s
+Sleep 3s
 
 # Show generated files
 Type "ls generated/checkout-service/"
 Enter
-Sleep 2s
+Sleep 3s

@@ -16,10 +16,10 @@ Set Framerate 30
 # Force color output for Rich
 Env FORCE_COLOR "1"
 
-# Show the banner first
-Type ".venv/bin/nthlayer"
+# Show the banner (--version gives clean output without help text)
+Type ".venv/bin/nthlayer --version"
 Enter
-Sleep 3s
+Sleep 4s
 
 # Run nthlayer apply
 Type ".venv/bin/nthlayer apply examples/services/checkout-service.yaml"

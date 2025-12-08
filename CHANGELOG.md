@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.1.0a6 (December 8, 2025)
+
+### Complete CLI Styling with Nord Color Palette
+
+- **New UX Module** (`src/nthlayer/cli/ux.py`) - Hybrid Charm/Rich module with Nord colors
+- **ASCII Banner** - Blocky NTHLAYER banner on `--version` and no-command
+- **Unicode Symbols** - Clean ✓✗⚠ℹ symbols instead of emojis (universal terminal support)
+- **Nord Color Palette** - Frost blue headers, Aurora success/warning/error, Snow Storm muted text
+- **Environment-Aware** - Detects CI/CD, respects NO_COLOR/FORCE_COLOR standards
+- **Rich Tables** - Colored tables for portfolio and validation output
+- **Styled All 19 Commands** - Consistent styling across entire CLI
+
+### Demo GIFs
+- Hero GIF with ASCII banner
+- All 4 demo GIFs regenerated with new styling
+
+---
+
 ## v0.1.0a2 (December 5, 2025)
 
 ### Code Quality - DRY Cleanup (~3,860 lines removed)

@@ -27,7 +27,7 @@ from nthlayer.cli.ux import print_banner
 from nthlayer.providers.grafana import GrafanaProvider, GrafanaProviderError
 
 # Version - keep in sync with pyproject.toml
-__version__ = "0.1.0a5"
+__version__ = "0.1.0a6"
 
 logger = structlog.get_logger()
 

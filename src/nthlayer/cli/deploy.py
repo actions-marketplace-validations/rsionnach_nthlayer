@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import yaml
 
+from nthlayer.cli.ux import console, header
 from nthlayer.slos.gates import DeploymentGate
 from nthlayer.specs.environment_gates import (
     explain_thresholds,
@@ -37,14 +38,12 @@ def check_deploy_command(
     Returns:
         Exit code (0, 1, or 2)
     """
-    print("=" * 70)
-    print("  NthLayer: Deployment Gate Check")
-    print("=" * 70)
-    print()
+    header("Deployment Gate Check")
+    console.print()
 
     if environment:
-        print(f"🌍 Environment: {environment}")
-        print()
+        console.print(f"[info]Environment:[/info] {environment}")
+        console.print()
 
     # Parse service file with optional environment overrides
     try:

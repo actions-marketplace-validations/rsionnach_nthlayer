@@ -13,8 +13,11 @@ Set Theme "Dracula"
 Set Padding 20
 Set Framerate 30
 
+# Force color output for Rich
+Env FORCE_COLOR "1"
+
 # Run plan command
-Type ".venv/bin/nthlayer plan examples/services/checkout-service.yaml"
+Type "FORCE_COLOR=1 .venv/bin/nthlayer plan examples/services/checkout-service.yaml"
 Enter
 Sleep 4s
 

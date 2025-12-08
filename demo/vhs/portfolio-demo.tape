@@ -13,8 +13,11 @@ Set Theme "Dracula"
 Set Padding 20
 Set Framerate 30
 
+# Force color output for Rich
+Env FORCE_COLOR "1"
+
 # Run portfolio command on examples
-Type ".venv/bin/nthlayer portfolio --path examples/services"
+Type "FORCE_COLOR=1 .venv/bin/nthlayer portfolio --path examples/services"
 Enter
 Sleep 4s
 

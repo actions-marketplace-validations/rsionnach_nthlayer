@@ -13,13 +13,16 @@ Set Theme "Dracula"
 Set Padding 20
 Set Framerate 30
 
+# Force color output for Rich
+Env FORCE_COLOR "1"
+
 # Show a real service spec from examples
 Type "cat examples/services/checkout-service.yaml"
 Enter
 Sleep 4s
 
 # Run nthlayer apply
-Type ".venv/bin/nthlayer apply examples/services/checkout-service.yaml"
+Type "FORCE_COLOR=1 .venv/bin/nthlayer apply examples/services/checkout-service.yaml"
 Enter
 Sleep 3s
 

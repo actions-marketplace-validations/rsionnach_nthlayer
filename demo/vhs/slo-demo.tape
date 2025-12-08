@@ -13,8 +13,11 @@ Set Theme "Dracula"
 Set Padding 20
 Set Framerate 30
 
+# Force color output for Rich
+Env FORCE_COLOR "1"
+
 # Show SLO details for a specific service
-Type ".venv/bin/nthlayer slo show checkout-service --file examples/services/checkout-service.yaml"
+Type "FORCE_COLOR=1 .venv/bin/nthlayer slo show checkout-service --file examples/services/checkout-service.yaml"
 Enter
 Sleep 4s
 

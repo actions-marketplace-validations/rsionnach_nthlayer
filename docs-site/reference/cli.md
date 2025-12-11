@@ -163,6 +163,25 @@ nthlayer setup-pagerduty <service.yaml> [options]
 | `--api-key KEY` | PagerDuty API key |
 | `--dry-run` | Preview changes |
 
+### verify
+
+Verify declared metrics exist in Prometheus (contract verification).
+
+```bash
+nthlayer verify <service.yaml> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--prometheus-url, -p URL` | Target Prometheus URL |
+| `--env ENVIRONMENT` | Environment name |
+| `--no-fail` | Don't fail on missing metrics |
+
+Exit codes:
+- `0` = All metrics verified
+- `1` = Optional metrics missing (warning)
+- `2` = Critical SLO metrics missing (block)
+
 ### lint
 
 Lint generated Prometheus rules.
@@ -215,7 +234,10 @@ nthlayer secrets <subcommand>
 
 | Variable | Description |
 |----------|-------------|
-| `NTHLAYER_PROMETHEUS_URL` | Prometheus server URL |
+| `PROMETHEUS_URL` | Prometheus server URL (for verify command) |
+| `PROMETHEUS_USERNAME` | Prometheus basic auth username |
+| `PROMETHEUS_PASSWORD` | Prometheus basic auth password |
+| `NTHLAYER_PROMETHEUS_URL` | Prometheus server URL (legacy) |
 | `NTHLAYER_GRAFANA_URL` | Grafana server URL |
 | `NTHLAYER_GRAFANA_API_KEY` | Grafana API key |
 | `NTHLAYER_GRAFANA_ORG_ID` | Grafana organization ID |

@@ -534,18 +534,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     deploy_parser.add_argument("service_file", help="Path to service YAML file")
     deploy_parser.add_argument(
+        "--prometheus-url",
+        "-p",
+        help="Prometheus URL (or use PROMETHEUS_URL env var)",
+    )
+    deploy_parser.add_argument(
         "--env", "--environment", dest="environment", help="Environment name (dev, staging, prod)"
     )
     deploy_parser.add_argument(
         "--auto-env",
         action="store_true",
         help="Auto-detect environment from context (CI/CD env vars)",
-    )
-    deploy_parser.add_argument(
-        "--budget-consumed", type=int, help="Error budget consumed in minutes (for testing)"
-    )
-    deploy_parser.add_argument(
-        "--budget-total", type=int, help="Total error budget in minutes (for testing)"
     )
 
     init_parser = subparsers.add_parser("init", help="Initialize new NthLayer service")
@@ -865,9 +864,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         sys.exit(
             check_deploy_command(
                 args.service_file,
+                prometheus_url=getattr(args, "prometheus_url", None),
                 environment=env,
-                budget_consumed=args.budget_consumed,
-                budget_total=args.budget_total,
             )
         )
 

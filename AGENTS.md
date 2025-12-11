@@ -83,6 +83,8 @@ flowchart TB
 | **Deployment Gates** | ArgoCD blocking, CI/CD integration | 📋 ResLayer Phase 2 |
 | **Policies** | Resource limits, deployment rules | 📋 GovLayer |
 | **Runbooks** | Auto-generated troubleshooting guides | 📋 ObserveLayer |
+| **Chaos Experiments** | Litmus ChaosEngine manifests | 📋 Phase 8 |
+| **Synthetic Probes** | Cloudprober configs | 📋 Phase 8 |
 
 ## Roadmap
 
@@ -97,6 +99,11 @@ flowchart TB
 - `nthlayer check-deploy` - Deployment gates (error budget)
 - `nthlayer apply --lint` - PromQL validation
 - Generation is the mechanism, prevention is the value
+
+**Complementary tool integrations:**
+- promruval - Enhanced rule validation (40+ validators)
+- Litmus - Chaos experiment generation
+- Cloudprober - Synthetic monitoring config
 
 **Don't compete with (for now):**
 - Incident pattern learning (PagerDuty Insights)
@@ -133,6 +140,13 @@ flowchart TB
 - `trellis-portfolio-trends`: Local SQLite for historical data
 - `trellis-portfolio-web`: Local web dashboard
 - `trellis-portfolio-export`: JSON/CSV export for reporting
+
+### Phase 3.5: Enhanced Validation (📋 PLANNED)
+**Goal:** Beyond pint - comprehensive rule validation with promruval
+- `trellis-promruval`: Evaluate promruval integration
+- Enhanced metadata validation (playbook URLs exist, label patterns)
+- Thanos/Mimir/Loki rule support
+- `nthlayer apply --validate-metadata` flag
 
 ### Phase 4: AI-Assisted Generation
 **Goal:** Conversational service.yaml creation (complements, doesn't compete with PD)
@@ -175,6 +189,22 @@ flowchart TB
 
 **Prerequisites:** Phase 4 (AI foundation), Phase 5 (deployment gates)
 **Decision point:** Review after Phase 5 - compete or complement PagerDuty?
+
+### Phase 8: Reliability Testing (Future)
+**Goal:** Generate reliability tests alongside monitoring - complete Shift Left
+
+- `trellis-litmus`: Litmus Chaos Experiment Generation
+  - Generate chaos experiments from service.yaml dependencies
+  - ChaosHub integration for common failure scenarios
+  - Pod-kill, network-latency, resource-stress experiments
+  - "Test failures before they happen in production"
+
+- `trellis-cloudprober`: Synthetic Monitoring Config
+  - Generate Cloudprober configs from service.yaml endpoints
+  - HTTP, TCP, DNS probes for external monitoring
+  - Probe results feed into SLI metrics
+
+**Prerequisites:** Phase 5 (deployment gates), stable service.yaml spec
 
 ### Technology Templates (Ongoing)
 - `trellis-0cd`: Kafka (consumer lag, partitions, replication)

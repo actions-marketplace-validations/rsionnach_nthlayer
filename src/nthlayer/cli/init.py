@@ -2,8 +2,47 @@
 
 from pathlib import Path
 
-from nthlayer.cli.ux import console, error, header, info, success, warning
+from nthlayer.cli.ux import (
+    console,
+    error,
+    header,
+    info,
+    multi_select,
+    select,
+    success,
+    text_input,
+    warning,
+)
 from nthlayer.specs.custom_templates import CustomTemplateLoader
+
+# Service type descriptions
+SERVICE_TYPES = {
+    "api": "REST/GraphQL API service",
+    "worker": "Background job processor",
+    "stream": "Stream processing service (Kafka, etc.)",
+    "web": "Web application (frontend)",
+    "batch": "Batch processing job",
+    "ml": "Machine learning/AI service",
+}
+
+# Tier descriptions
+TIERS = {
+    "critical": "Tier 1 - Business critical, highest SLO",
+    "standard": "Tier 2 - Standard service, moderate SLO",
+    "low": "Tier 3 - Low priority, relaxed SLO",
+}
+
+# Common dependencies
+DEPENDENCIES = [
+    "postgresql",
+    "mysql",
+    "redis",
+    "mongodb",
+    "elasticsearch",
+    "kafka",
+    "rabbitmq",
+    "dynamodb",
+]
 
 
 def init_command(
@@ -25,7 +64,9 @@ def init_command(
     Returns:
         Exit code (0 for success, 1 for error)
     """
-    header("Welcome to NthLayer!")
+    header("Initialize NthLayer Service")
+    console.print()
+    console.print("[muted]Create a new service.yaml with interactive prompts[/muted]")
     console.print()
 
     # Load templates (built-in + custom)
@@ -35,9 +76,12 @@ def init_command(
         error(f"Error loading templates: {e}")
         return 1
 
-    # Interactive prompts if not provided
+    # Interactive prompts using questionary/gum
     if not service_name and interactive:
-        service_name = input("Service name (lowercase-with-hyphens): ").strip()
+        service_name = text_input(
+            "Service name",
+            placeholder="lowercase-with-hyphens (e.g., payment-api)",
+        )
 
     if not service_name:
         error("Service name is required")
@@ -52,51 +96,64 @@ def init_command(
         return 1
 
     if not team and interactive:
-        team = input("Team name: ").strip()
+        team = text_input("Team name", placeholder="e.g., platform, payments")
 
     if not team:
         error("Team name is required")
         return 1
 
-    # Show available templates
-    if not template and interactive:
+    # Select service tier using interactive menu
+    tier = None
+    if interactive:
+        tier_choices = [f"{k} - {v}" for k, v in TIERS.items()]
+        selected_tier = select("Service tier", tier_choices, default=tier_choices[1])
+        tier = selected_tier.split(" - ")[0]
+
+    # Select service type using interactive menu
+    service_type = None
+    if interactive:
+        type_choices = [f"{k} - {v}" for k, v in SERVICE_TYPES.items()]
+        selected_type = select("Service type", type_choices, default=type_choices[0])
+        service_type = selected_type.split(" - ")[0]
+
+    # Select dependencies using multi-select
+    dependencies = []
+    if interactive:
         console.print()
-        console.print("[bold]Available templates:[/bold]")
-        templates = registry.list()
-        for i, tmpl in enumerate(templates, 1):
-            console.print(f"  [info]{i}.[/info] [bold]{tmpl.name}[/bold]")
-            console.print(f"     [muted]{tmpl.description}[/muted]")
-            console.print(f"     [muted]Resources: {len(tmpl.resources)}[/muted]")
-            console.print()
-
-        while True:
-            choice = input(f"Choose template (1-{len(templates)}): ").strip()
-            try:
-                idx = int(choice) - 1
-                if 0 <= idx < len(templates):
-                    template = templates[idx].name
-                    break
-                else:
-                    console.print(
-                        f"   [warning]Please enter a number "
-                        f"between 1 and {len(templates)}[/warning]"
-                    )
-            except ValueError:
-                console.print("   [warning]Please enter a valid number[/warning]")
-
-    if not template:
-        error("Template is required")
-        return 1
-
-    # Validate template exists
-    if not registry.exists(template):
-        error(f"Unknown template '{template}'")
         console.print(
-            f"   [muted]Available templates: {', '.join(registry.templates.keys())}[/muted]"
+            "[muted]Select service dependencies (space to toggle, enter to confirm)[/muted]"
         )
-        return 1
+        dependencies = multi_select("Dependencies", DEPENDENCIES)
 
-    template_obj = registry.get(template)
+    # Template selection (optional - use built-in if available)
+    if not template and interactive:
+        templates = registry.list()
+        if templates:
+            template_choices = [f"{t.name} - {t.description}" for t in templates]
+            template_choices.insert(0, "none - Generate from selections above")
+            selected = select("Use template?", template_choices, default=template_choices[0])
+            if not selected.startswith("none"):
+                template = selected.split(" - ")[0]
+
+    # Get template object if specified
+    template_obj = None
+    if template:
+        if not registry.exists(template):
+            error(f"Unknown template '{template}'")
+            console.print(
+                f"   [muted]Available templates: {', '.join(registry.templates.keys())}[/muted]"
+            )
+            return 1
+        template_obj = registry.get(template)
+        # Use template's tier and type if not explicitly selected
+        if not tier:
+            tier = template_obj.tier
+        if not service_type:
+            service_type = template_obj.type
+
+    # Default values if still not set
+    tier = tier or "standard"
+    service_type = service_type or "api"
 
     # Create service file
     service_file = Path(f"{service_name}.yaml")
@@ -109,7 +166,9 @@ def init_command(
         return 1
 
     # Generate service YAML content
-    service_content = _generate_service_yaml(service_name, team, template_obj)
+    service_content = _generate_service_yaml_v2(
+        service_name, team, tier, service_type, dependencies, template_obj
+    )
 
     try:
         service_file.write_text(service_content)
@@ -180,8 +239,161 @@ def _is_valid_service_name(name: str) -> bool:
     return True
 
 
+def _generate_service_yaml_v2(
+    service_name: str,
+    team: str,
+    tier: str,
+    service_type: str,
+    dependencies: list[str],
+    template=None,
+) -> str:
+    """Generate service YAML content with all parameters.
+
+    Args:
+        service_name: Service name
+        team: Team name
+        tier: Service tier (critical, standard, low)
+        service_type: Service type (api, worker, stream, etc.)
+        dependencies: List of dependency names
+        template: Optional ServiceTemplate object
+
+    Returns:
+        YAML content as string
+    """
+    # Build resources section
+    resources_yaml = _build_resources_yaml(service_name, tier, service_type, dependencies)
+
+    # Template line if using a template
+    template_line = f"  template: {template.name}\n" if template else ""
+
+    return f"""# {service_name} Service Definition
+# Generated by NthLayer
+
+service:
+  name: {service_name}
+  team: {team}
+  tier: {tier}
+  type: {service_type}
+{template_line}
+resources:
+{resources_yaml}
+"""
+
+
+def _build_resources_yaml(
+    service_name: str,
+    tier: str,
+    service_type: str,
+    dependencies: list[str],
+) -> str:
+    """Build the resources YAML section.
+
+    Args:
+        service_name: Service name
+        tier: Service tier
+        service_type: Service type
+        dependencies: List of dependency names
+
+    Returns:
+        YAML content for resources
+    """
+    resources = []
+
+    # Add SLO based on tier
+    if tier == "critical":
+        resources.append(
+            """  # Availability SLO - critical tier
+  - kind: SLO
+    name: availability
+    spec:
+      objective: 99.95
+      window: 30d
+      indicator:
+        type: availability"""
+        )
+    else:
+        resources.append(
+            """  # Availability SLO
+  - kind: SLO
+    name: availability
+    spec:
+      objective: 99.9
+      window: 30d
+      indicator:
+        type: availability"""
+        )
+
+    # Add latency SLO for API types
+    if service_type in ("api", "web"):
+        resources.append(
+            """
+  # Latency SLO - p95
+  - kind: SLO
+    name: latency-p95
+    spec:
+      objective: 99.0
+      window: 30d
+      indicator:
+        type: latency
+        percentile: 95
+        threshold_ms: 500"""
+        )
+
+    # Add PagerDuty for critical tier
+    if tier == "critical":
+        resources.append(
+            """
+  # PagerDuty integration
+  - kind: PagerDuty
+    name: primary
+    spec:
+      urgency: high
+      auto_create: true"""
+        )
+
+    # Add dependencies if selected
+    if dependencies:
+        db_deps = [d for d in dependencies if d in ("postgresql", "mysql", "mongodb", "dynamodb")]
+        cache_deps = [d for d in dependencies if d in ("redis", "elasticsearch")]
+        queue_deps = [d for d in dependencies if d in ("kafka", "rabbitmq")]
+
+        deps_yaml = """
+  # Service dependencies
+  - kind: Dependencies
+    name: infrastructure
+    spec:"""
+
+        if db_deps:
+            deps_yaml += "\n      databases:"
+            for db in db_deps:
+                deps_yaml += f"""
+        - name: {service_name}-{db}
+          type: {db}
+          criticality: high"""
+
+        if cache_deps:
+            deps_yaml += "\n      caches:"
+            for cache in cache_deps:
+                deps_yaml += f"""
+        - name: {service_name}-{cache}
+          type: {cache}
+          criticality: medium"""
+
+        if queue_deps:
+            deps_yaml += "\n      queues:"
+            for queue in queue_deps:
+                deps_yaml += f"""
+        - name: {service_name}-{queue}
+          type: {queue}
+          criticality: high"""
+
+        resources.append(deps_yaml)
+
+    return "\n".join(resources)
+
+
 def _generate_service_yaml(service_name: str, team: str, template) -> str:
-    """Generate service YAML content.
+    """Generate service YAML content (legacy).
 
     Args:
         service_name: Service name

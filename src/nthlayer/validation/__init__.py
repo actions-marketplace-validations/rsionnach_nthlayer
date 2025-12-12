@@ -1,5 +1,10 @@
 """Validation module for linting and policy checking."""
 
+from nthlayer.validation.conftest import (
+    ConftestValidator,
+    is_conftest_available,
+    validate_spec,
+)
 from nthlayer.validation.metadata import (
     AlertForDuration,
     BaseValidator,
@@ -63,4 +68,8 @@ __all__ = [
     "PromruvalConfig",
     "is_promruval_available",
     "validate_with_promruval",
+    # conftest/OPA policy validation
+    "ConftestValidator",
+    "is_conftest_available",
+    "validate_spec",
 ]

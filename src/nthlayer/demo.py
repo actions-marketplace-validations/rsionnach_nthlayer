@@ -29,6 +29,10 @@ from nthlayer.cli.validate_metadata import (
     handle_validate_metadata_command,
     register_validate_metadata_parser,
 )
+from nthlayer.cli.validate_spec import (
+    handle_validate_spec_command,
+    register_validate_spec_parser,
+)
 from nthlayer.cli.verify import handle_verify_command, register_verify_parser
 from nthlayer.providers.grafana import GrafanaProvider, GrafanaProviderError
 
@@ -736,6 +740,9 @@ def build_parser() -> argparse.ArgumentParser:
     # Validate metadata command
     register_validate_metadata_parser(subparsers)
 
+    # Validate spec command (conftest/OPA)
+    register_validate_spec_parser(subparsers)
+
     return parser
 
 
@@ -1065,5 +1072,8 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     if args.command == "validate-metadata":
         sys.exit(handle_validate_metadata_command(args))
+
+    if args.command == "validate-spec":
+        sys.exit(handle_validate_spec_command(args))
 
     parser.print_help()

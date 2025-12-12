@@ -26,8 +26,10 @@ nthlayer apply <service.yaml> [options]
 | Option | Description |
 |--------|-------------|
 | `--push` | Push dashboard to Grafana |
+| `--push-ruler` | Push alerts to Mimir/Cortex Ruler API |
 | `--output-dir DIR` | Custom output directory |
 | `--dry-run` | Preview without writing |
+| `--lint` | Validate generated alerts with pint |
 
 ### setup
 
@@ -163,6 +165,44 @@ nthlayer setup-pagerduty <service.yaml> [options]
 | `--api-key KEY` | PagerDuty API key |
 | `--dry-run` | Preview changes |
 
+### verify
+
+Verify declared metrics exist in Prometheus (contract verification).
+
+```bash
+nthlayer verify <service.yaml> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--prometheus-url, -p URL` | Target Prometheus URL |
+| `--env ENVIRONMENT` | Environment name |
+| `--no-fail` | Don't fail on missing metrics |
+
+Exit codes:
+- `0` = All metrics verified
+- `1` = Optional metrics missing (warning)
+- `2` = Critical SLO metrics missing (block)
+
+### check-deploy
+
+Check deployment gate based on error budget.
+
+```bash
+nthlayer check-deploy <service.yaml> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--prometheus-url, -p URL` | Target Prometheus URL |
+| `--env ENVIRONMENT` | Environment name |
+| `--auto-env` | Auto-detect environment |
+
+Exit codes:
+- `0` = Approved (budget healthy)
+- `1` = Warning (budget 10-20% remaining)
+- `2` = Blocked (budget < 10% for critical tier)
+
 ### lint
 
 Lint generated Prometheus rules.
@@ -215,10 +255,16 @@ nthlayer secrets <subcommand>
 
 | Variable | Description |
 |----------|-------------|
-| `NTHLAYER_PROMETHEUS_URL` | Prometheus server URL |
+| `PROMETHEUS_URL` | Prometheus server URL (for verify command) |
+| `PROMETHEUS_USERNAME` | Prometheus basic auth username |
+| `PROMETHEUS_PASSWORD` | Prometheus basic auth password |
+| `NTHLAYER_PROMETHEUS_URL` | Prometheus server URL (legacy) |
 | `NTHLAYER_GRAFANA_URL` | Grafana server URL |
 | `NTHLAYER_GRAFANA_API_KEY` | Grafana API key |
 | `NTHLAYER_GRAFANA_ORG_ID` | Grafana organization ID |
+| `MIMIR_RULER_URL` | Mimir/Cortex Ruler API URL |
+| `MIMIR_TENANT_ID` | Mimir tenant ID (multi-tenant) |
+| `MIMIR_API_KEY` | Mimir API key (if auth required) |
 | `PAGERDUTY_API_KEY` | PagerDuty API key |
 | `NTHLAYER_PROFILE` | Config profile to use |
 

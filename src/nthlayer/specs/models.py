@@ -127,6 +127,7 @@ VALID_RESOURCE_KINDS = {
     "PagerDuty",
     "Dependencies",
     "Observability",
+    "DeploymentGate",
 }
 
 # Valid service tiers

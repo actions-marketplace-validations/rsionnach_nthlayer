@@ -20,10 +20,20 @@ import yaml
 
 from nthlayer.alerts import AlertTemplateLoader
 from nthlayer.alerts.models import AlertRule
+from nthlayer.cli.generate_loki import handle_loki_command, register_loki_parser
 from nthlayer.cli.portfolio import handle_portfolio_command, register_portfolio_parser
 from nthlayer.cli.setup import handle_setup_command, register_setup_parser
 from nthlayer.cli.slo import handle_slo_command, register_slo_parser
 from nthlayer.cli.ux import print_banner
+from nthlayer.cli.validate_metadata import (
+    handle_validate_metadata_command,
+    register_validate_metadata_parser,
+)
+from nthlayer.cli.validate_spec import (
+    handle_validate_spec_command,
+    register_validate_spec_parser,
+)
+from nthlayer.cli.verify import handle_verify_command, register_verify_parser
 from nthlayer.providers.grafana import GrafanaProvider, GrafanaProviderError
 
 # Version - keep in sync with pyproject.toml
@@ -438,6 +448,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Push dashboard to Grafana via API (requires NTHLAYER_GRAFANA_URL)",
     )
     apply_parser.add_argument(
+        "--push-ruler",
+        action="store_true",
+        help="Push alerts to Mimir/Cortex Ruler API (requires MIMIR_RULER_URL)",
+    )
+    apply_parser.add_argument(
         "--lint",
         action="store_true",
         help="Validate generated alerts with pint (requires pint to be installed)",
@@ -533,6 +548,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     deploy_parser.add_argument("service_file", help="Path to service YAML file")
     deploy_parser.add_argument(
+        "--prometheus-url",
+        "-p",
+        help="Prometheus URL (or use PROMETHEUS_URL env var)",
+    )
+    deploy_parser.add_argument(
         "--env", "--environment", dest="environment", help="Environment name (dev, staging, prod)"
     )
     deploy_parser.add_argument(
@@ -541,10 +561,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Auto-detect environment from context (CI/CD env vars)",
     )
     deploy_parser.add_argument(
-        "--budget-consumed", type=int, help="Error budget consumed in minutes (for testing)"
-    )
-    deploy_parser.add_argument(
-        "--budget-total", type=int, help="Total error budget in minutes (for testing)"
+        "--demo",
+        action="store_true",
+        help="Show demo output with sample data (for VHS recordings)",
     )
 
     init_parser = subparsers.add_parser("init", help="Initialize new NthLayer service")
@@ -712,6 +731,18 @@ def build_parser() -> argparse.ArgumentParser:
     # Setup command
     register_setup_parser(subparsers)
 
+    # Verify command (contract verification)
+    register_verify_parser(subparsers)
+
+    # Loki alerts command
+    register_loki_parser(subparsers)
+
+    # Validate metadata command
+    register_validate_metadata_parser(subparsers)
+
+    # Validate spec command (conftest/OPA)
+    register_validate_spec_parser(subparsers)
+
     return parser
 
 
@@ -759,6 +790,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 verbose=args.verbose,
                 output_format=args.output,
                 push_grafana=args.push_grafana,
+                push_ruler=getattr(args, "push_ruler", False),
                 lint=args.lint,
             )
         )
@@ -861,9 +893,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         sys.exit(
             check_deploy_command(
                 args.service_file,
+                prometheus_url=getattr(args, "prometheus_url", None),
                 environment=env,
-                budget_consumed=args.budget_consumed,
-                budget_total=args.budget_total,
+                demo=getattr(args, "demo", False),
             )
         )
 
@@ -1031,5 +1063,17 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     if args.command == "setup":
         sys.exit(handle_setup_command(args))
+
+    if args.command == "verify":
+        sys.exit(handle_verify_command(args))
+
+    if args.command == "generate-loki-alerts":
+        sys.exit(handle_loki_command(args))
+
+    if args.command == "validate-metadata":
+        sys.exit(handle_validate_metadata_command(args))
+
+    if args.command == "validate-spec":
+        sys.exit(handle_validate_spec_command(args))
 
     parser.print_help()

@@ -10,11 +10,61 @@
 
 # NthLayer
 
-Generate your complete reliability stack from a single service spec.
+**Reliability at build time, not incident time.**
 
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge)](https://github.com/rsionnach/nthlayer)
 [![PyPI](https://img.shields.io/pypi/v/nthlayer?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/nthlayer/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE.txt)
+
+---
+
+## ⚠️ The Problem
+
+Teams deploy code without reliability validation:
+- Alerts created **after** the first incident
+- Dashboards built **after** users complain
+- SLOs defined **after** budget is exhausted
+- No gates to prevent risky deploys
+
+## ✅ The Solution
+
+NthLayer shifts reliability left into your CI/CD pipeline:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ service.yaml → generate → lint → verify → check-deploy → deploy            │
+│                   ↓         ↓       ↓           ↓                          │
+│               artifacts   valid?  metrics?  budget ok?                     │
+│                                                                            │
+│ "Is this production-ready?" - answered BEFORE deployment                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+```bash
+# In your Tekton/GitHub Actions pipeline:
+nthlayer apply service.yaml --lint    # Generate + validate PromQL syntax
+nthlayer verify service.yaml          # Verify declared metrics exist
+nthlayer check-deploy service.yaml    # Check error budget gate
+# Only if all pass: deploy to production
+```
+
+Works with: **Tekton**, **GitHub Actions**, **GitLab CI**, **ArgoCD**, **Mimir/Cortex**
+
+---
+
+## 🚦 Shift Left Features
+
+| Command | What It Does | Pipeline Exit Code |
+|---------|--------------|-------------------|
+| `nthlayer verify` | Validates declared metrics exist in Prometheus | 1 if missing metrics |
+| `nthlayer check-deploy` | Checks error budget - blocks if exhausted | 2 if budget exhausted |
+| `nthlayer apply --lint` | Validates PromQL syntax with pint | 1 if invalid queries |
+
+### Deployment Gate Example
+
+<div align="center">
+  <img src="demo/vhs/check-deploy-demo.gif" alt="nthlayer check-deploy demo" width="700">
+</div>
 
 ---
 
@@ -31,6 +81,27 @@ nthlayer apply service.yaml
 #   ├── slos.yaml            → OpenSLO
 #   └── recording-rules.yaml → Prometheus
 ```
+
+---
+
+## 🎯 Why NthLayer?
+
+| Benefit | How It Works |
+|---------|--------------|
+| **Prevent, Don't React** | Validate reliability requirements before deploy, not after incidents |
+| **Contract Verification** | `nthlayer verify` fails pipeline if declared metrics don't exist |
+| **Deployment Gates** | `nthlayer check-deploy` blocks deploys when error budget exhausted |
+| **Immutable Standards** | Update NthLayer version = all services get new standards |
+| **GitOps Native** | Generated files commit to git, works with any CD system |
+
+### Competitive Positioning
+
+| Tool | Focus | NthLayer Difference |
+|------|-------|---------------------|
+| **PagerDuty** | Incident response | "They respond to incidents, we prevent them" |
+| **Datadog** | Post-deploy monitoring | "They monitor after, we validate before" |
+| **Nobl9** | SLO tracking | "They track SLOs, we enforce them as gates" |
+| **Backstage** | Service catalog | "They document, we generate and enforce" |
 
 ---
 
@@ -191,12 +262,30 @@ pagerduty:
 
 ## 🛠️ CLI Commands
 
+### Generate
+
 ```bash
-nthlayer plan service.yaml      # 👀 Preview what will be generated
-nthlayer apply service.yaml     # ✨ Generate all artifacts
-nthlayer apply --push-grafana   # 📊 Also push dashboard to Grafana
-nthlayer apply --lint           # ✅ Validate generated alerts with pint
-nthlayer lint alerts.yaml       # 🔍 Lint existing Prometheus rules
+nthlayer init                   # Interactive service.yaml creation
+nthlayer plan service.yaml      # Preview what will be generated
+nthlayer apply service.yaml     # Generate all artifacts
+nthlayer apply --push           # Also push dashboard to Grafana
+nthlayer apply --push-ruler     # Push alerts to Mimir/Cortex Ruler API
+```
+
+### Validate
+
+```bash
+nthlayer apply --lint           # Validate PromQL syntax (pint)
+nthlayer validate-spec service.yaml  # Check against policies (OPA/Rego)
+nthlayer verify service.yaml    # Verify metrics exist in Prometheus
+```
+
+### Protect
+
+```bash
+nthlayer check-deploy service.yaml  # Check error budget gate (exit 2 = blocked)
+nthlayer portfolio              # Org-wide SLO health
+nthlayer slo collect service.yaml   # Query current budget from Prometheus
 ```
 
 ---
@@ -207,8 +296,9 @@ nthlayer lint alerts.yaml       # 🔍 Lint existing Prometheus rules
 |---------|-------------|--------|
 | 💰 **Error Budgets** | Track budget consumption, correlate with deploys | ✅ Done |
 | 📊 **SLO Portfolio** | Org-wide reliability view across all services | ✅ Done |
+| 🚦 **Deployment Gates** | Block deploys when error budget exhausted | ✅ Done |
+| ✅ **Contract Verification** | Verify declared metrics exist before promotion | ✅ Done |
 | 📝 **Loki Integration** | Generate LogQL alert rules, technology-specific log patterns | 🔨 Next |
-| 🚦 **Deployment Gates** | Block ArgoCD deploys when budget exhausted | 📋 Planned |
 | 🤖 **AI Generation** | Conversational service.yaml creation via MCP | 📋 Planned |
 
 ---

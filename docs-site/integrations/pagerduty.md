@@ -2,6 +2,19 @@
 
 NthLayer can create and manage PagerDuty teams, services, and escalation policies.
 
+## Quick Start
+
+```bash
+# Set your API key
+export PAGERDUTY_API_KEY=u+xxxxxxxxxxxxxxxxxx
+
+# Setup PagerDuty resources for a service
+nthlayer setup-pagerduty services/payment-api.yaml
+
+# Or preview first with --dry-run
+nthlayer setup-pagerduty services/payment-api.yaml --dry-run
+```
+
 ## Configuration
 
 ### Via Setup Wizard

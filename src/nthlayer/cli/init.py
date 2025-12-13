@@ -25,6 +25,16 @@ SERVICE_TYPES = {
     "ml": "Machine learning/AI service",
 }
 
+# Map user-friendly service types to template types
+SERVICE_TYPE_TO_TEMPLATE_TYPE = {
+    "api": "api",
+    "worker": "background-job",
+    "stream": "pipeline",
+    "web": "web",
+    "batch": "pipeline",
+    "ml": "api",  # ML services often have API interfaces
+}
+
 # Tier descriptions
 TIERS = {
     "critical": "Tier 1 - Business critical, highest SLO",
@@ -130,7 +140,8 @@ def init_command(
         templates = registry.list()
         # Filter templates by service type if one was selected
         if service_type and templates:
-            templates = [t for t in templates if t.type == service_type]
+            template_type = SERVICE_TYPE_TO_TEMPLATE_TYPE.get(service_type, service_type)
+            templates = [t for t in templates if t.type == template_type]
         if templates:
             template_choices = [f"{t.name} - {t.description}" for t in templates]
             template_choices.insert(0, "none - Generate from selections above")

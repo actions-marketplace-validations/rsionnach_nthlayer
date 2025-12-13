@@ -90,7 +90,7 @@ PROMPT_STYLE = QStyle(
         ("answer", "fg:#A3BE8C bold"),  # Nord aurora green - selected answer
         ("pointer", "fg:#88C0D0 bold"),  # Nord frost - list pointer (>)
         ("highlighted", "fg:#88C0D0 bold"),  # Nord frost - currently highlighted option
-        ("selected", "fg:#88C0D0 bold"),  # Same as highlighted - questionary prioritizes this
+        ("selected", "fg:#A3BE8C"),  # Nord aurora green - for checkbox selected items
         ("separator", "fg:#4C566A"),  # Nord polar night - separators
         ("instruction", "fg:#D8DEE9"),  # Nord snow storm - instruction text
         ("text", "fg:#ECEFF4"),  # Nord snow storm - general text
@@ -253,7 +253,12 @@ def text_input(message: str, default: str = "", placeholder: str = "") -> str:
 
 
 def select(message: str, choices: list[str], default: str | None = None) -> str:
-    """Select from a list of choices."""
+    """Select from a list of choices.
+
+    Note: We don't pass 'default' to questionary because it applies a 'selected'
+    style that overrides 'highlighted', causing inconsistent highlighting behavior.
+    The cursor simply starts at the first item.
+    """
     if has_gum():
         result = _run_gum(
             ["choose", *choices],
@@ -262,10 +267,10 @@ def select(message: str, choices: list[str], default: str | None = None) -> str:
         )
         return result.stdout.strip() if result.returncode == 0 else (default or choices[0])
     else:
+        # Don't pass default - it causes selected style to override highlighted
         return questionary.select(
             message,
             choices=choices,
-            default=default,
             style=PROMPT_STYLE,
         ).ask() or (default or choices[0])
 

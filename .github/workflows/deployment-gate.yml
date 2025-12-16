@@ -28,7 +28,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install NthLayer
-        run: pip install nthlayer
+        run: pip install -e .
 
       - name: Generate + Lint
         run: |

@@ -40,8 +40,9 @@ jobs:
           ruff check src/ tests/ --ignore E501,B008,F841,B007,E402,E721,E722,B012,I001
 
       - name: Run type checking
+        # TODO: Make mypy blocking once type errors are fixed (50+ errors currently)
         run: |
-          pip install mypy types-redis types-requests
+          pip install mypy types-redis types-requests types-PyYAML
           mypy src/nthlayer --ignore-missing-imports --no-error-summary || true
 
       - name: Run tests
@@ -51,7 +52,7 @@ jobs:
             --ignore=tests/test_repository.py \
             --ignore=tests/integration/ \
             -v --tb=short \
-            -x  # Stop on first failure for faster feedback
+            -x
 
   lint:
     runs-on: ubuntu-latest
@@ -68,3 +69,54 @@ jobs:
 
       - name: Run ruff
         run: ruff check src/ tests/ --ignore E501,B008,F841,B007,E402,E721,E722,B012,I001
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip install -e ".[dev]"
+
+      - name: Run pip-audit
+        run: pip-audit --strict --progress-spinner off
+
+  self-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install NthLayer
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Validate example service specs
+        run: |
+          echo "=== Validating example service specs ==="
+          nthlayer validate-spec examples/services/
+
+      - name: Generate artifacts for example service
+        run: |
+          echo "=== Generating artifacts for checkout-service ==="
+          nthlayer apply examples/services/checkout-service.yaml --lint
+
+      - name: Verify generated artifacts exist
+        run: |
+          echo "=== Checking generated artifacts ==="
+          ls -la generated/checkout-service/
+          test -f generated/checkout-service/dashboard.json
+          test -f generated/checkout-service/alerts.yaml

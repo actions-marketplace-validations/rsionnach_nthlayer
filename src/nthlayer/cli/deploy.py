@@ -348,12 +348,23 @@ async def _collect_slo_metrics(
             indicators = spec.get("indicators", [])
             if indicators:
                 ind = indicators[0]
+                # Handle availability SLOs with success_ratio
                 if ind.get("success_ratio"):
                     sr = ind["success_ratio"]
                     total_query = sr.get("total_query")
                     good_query = sr.get("good_query")
                     if total_query and good_query:
                         query = f"({good_query}) / ({total_query})"
+                # Handle latency SLOs with latency_query
+                # Note: For latency, we query the percentile value directly
+                # This shows if query works but budget calc needs threshold comparison
+                elif ind.get("latency_query"):
+                    # For now, skip latency SLOs in budget calculation
+                    # They need different logic (compare against threshold_ms)
+                    result["error"] = "Latency SLOs not yet supported for gating"
+                    result["status"] = "NO_DATA"
+                    results.append(result)
+                    continue
 
         if query:
             # Substitute service name in query

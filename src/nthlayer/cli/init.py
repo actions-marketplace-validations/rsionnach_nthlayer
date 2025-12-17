@@ -160,10 +160,11 @@ def init_command(
             return 1
         template_obj = registry.get(template)
         # Use template's tier and type if not explicitly selected
-        if not tier:
-            tier = template_obj.tier
-        if not service_type:
-            service_type = template_obj.type
+        if template_obj:
+            if not tier:
+                tier = template_obj.tier
+            if not service_type:
+                service_type = template_obj.type
 
     # Default values if still not set
     tier = tier or "standard"

@@ -206,7 +206,7 @@ def _merge_resources(
         Merged list of resources (user overrides template)
     """
     # Build index by (kind, name)
-    merged: dict[tuple[str, str], Resource] = {}
+    merged: dict[tuple[str, str | None], Resource] = {}
 
     # Start with template resources
     for resource in template_resources:
@@ -220,7 +220,7 @@ def _merge_resources(
 
     # Return in stable order (template order first, then new user resources)
     result: list[Resource] = []
-    seen_keys: set[tuple[str, str]] = set()
+    seen_keys: set[tuple[str, str | None]] = set()
 
     # Add template resources (possibly overridden)
     for resource in template_resources:

@@ -34,7 +34,7 @@ class LintIssue:
     rule_name: str  # Name of the alert/recording rule
     check: str  # pint check that failed (e.g., "promql/syntax")
     message: str  # Human-readable description
-    line: int = None  # Line number if available
+    line: Optional[int] = None  # Line number if available
 
     @property
     def is_error(self) -> bool:
@@ -55,7 +55,7 @@ class LintResult:
     issues: List[LintIssue] = field(default_factory=list)
     raw_output: str = ""
     exit_code: int = 0
-    pint_version: str = None
+    pint_version: Optional[str] = None
 
     @property
     def passed(self) -> bool:
@@ -103,9 +103,9 @@ class PintLinter:
         """Check if pint is installed and accessible."""
         return self._pint_path is not None
 
-    def get_version(self) -> str:
+    def get_version(self) -> Optional[str]:
         """Get pint version string."""
-        if not self.is_available:
+        if not self.is_available or self._pint_path is None:
             return None
         try:
             result = subprocess.run(
@@ -163,8 +163,9 @@ class PintLinter:
                 exit_code=1,
             )
 
-        # Build pint command
-        cmd = [self._pint_path, "lint"]
+        # Build pint command (we know _pint_path is not None from is_available check above)
+        assert self._pint_path is not None
+        cmd: List[str] = [self._pint_path, "lint"]
 
         # Add config if specified
         if self.config_path and self.config_path.exists():

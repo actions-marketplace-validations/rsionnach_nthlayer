@@ -200,15 +200,15 @@ def diff_envs_command(service_file: str, env1: str, env2: str, show_all: bool = 
     console.print("[bold]Resources:[/bold]")
     console.print()
 
-    # Build resource maps
-    resources1_map = {r.name: r for r in resources1}
-    resources2_map = {r.name: r for r in resources2}
+    # Build resource maps (filter out resources without names)
+    resources1_map = {r.name: r for r in resources1 if r.name}
+    resources2_map = {r.name: r for r in resources2 if r.name}
 
     all_resource_names = set(resources1_map.keys()) | set(resources2_map.keys())
 
     resource_differences = False
 
-    for name in sorted(all_resource_names):
+    for name in sorted(all_resource_names):  # type: ignore[type-var]
         r1 = resources1_map.get(name)
         r2 = resources2_map.get(name)
 
@@ -307,17 +307,17 @@ def validate_env_command(
         env_files.insert(1, env_dir / f"{service_name}-{environment}.yml")
 
     env_file = None
-    for f in env_files:
-        if f.exists():
-            env_file = f
+    for ef in env_files:
+        if ef.exists():
+            env_file = ef
             break
 
     if not env_file:
         error(f"Environment file not found: {environment}")
         console.print()
         console.print("[muted]Searched for:[/muted]")
-        for f in env_files:
-            console.print(f"  [muted]•[/muted] {f.name}")
+        for ef in env_files:
+            console.print(f"  [muted]•[/muted] {ef.name}")
         console.print()
         return 1
 

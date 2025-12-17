@@ -80,10 +80,10 @@ class AlertRule:
         self,
         service_name: str,
         team: str,
-        tier: int,
+        tier: str,
         notification_channel: str = "",
         runbook_url: str = "",
-        routing: str = "",
+        routing: str | None = "",
     ) -> "AlertRule":
         """
         Customize alert for a specific service.

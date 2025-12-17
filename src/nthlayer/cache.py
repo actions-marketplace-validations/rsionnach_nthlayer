@@ -95,7 +95,8 @@ class RedisCache:
     async def acquire_lock(self, key: str, ttl: int = 60) -> bool:
         """Acquire distributed lock. Returns True if lock acquired."""
         client = await self._get_client()
-        return await client.set(key, "locked", nx=True, ex=ttl)
+        result = await client.set(key, "locked", nx=True, ex=ttl)
+        return bool(result)
 
     async def release_lock(self, key: str) -> None:
         """Release distributed lock."""

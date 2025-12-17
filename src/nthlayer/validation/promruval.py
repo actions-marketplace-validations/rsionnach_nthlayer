@@ -69,7 +69,7 @@ class PromruvalLinter:
 
     def get_version(self) -> str | None:
         """Get promruval version string."""
-        if not self.is_available:
+        if not self.is_available or self._promruval_path is None:
             return None
         try:
             result = subprocess.run(
@@ -120,7 +120,8 @@ class PromruvalLinter:
             return result
 
         # Build promruval command
-        cmd = [self._promruval_path, "validate"]
+        assert self._promruval_path is not None
+        cmd: list[str] = [self._promruval_path, "validate"]
 
         # Add config if specified
         if self.config.config_path and self.config.config_path.exists():
@@ -171,7 +172,7 @@ class PromruvalLinter:
 
     def _parse_json_output(self, stdout: str, stderr: str) -> list[ValidationIssue]:
         """Parse promruval JSON output."""
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if not stdout.strip():
             return issues
@@ -244,7 +245,7 @@ class PromruvalLinter:
 
     def list_validators(self) -> list[str]:
         """List available promruval validators."""
-        if not self.is_available:
+        if not self.is_available or self._promruval_path is None:
             return []
 
         try:

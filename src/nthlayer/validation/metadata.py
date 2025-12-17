@@ -231,7 +231,7 @@ class ValidRunbookUrl(BaseValidator):
         self.allowed_schemes = allowed_schemes or {"http", "https"}
 
     def validate(self, rule: RuleContext) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
         runbook_url = rule.annotations.get("runbook_url") or rule.annotations.get("runbook")
 
         if not runbook_url:
@@ -402,7 +402,7 @@ class AlertForDuration(BaseValidator):
         return 0
 
     def validate(self, rule: RuleContext) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
         if not rule.for_duration:
             return issues
 
@@ -598,7 +598,7 @@ class MetadataValidator:
 
     def _extract_rules(self, content: dict[str, Any]) -> list[RuleContext]:
         """Extract rules from Prometheus/Loki YAML structure."""
-        rules = []
+        rules: list[RuleContext] = []
 
         if not content:
             return rules

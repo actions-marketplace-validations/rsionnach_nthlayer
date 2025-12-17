@@ -288,7 +288,7 @@ def multi_select(message: str, choices: list[str], defaults: list[str] | None = 
             questionary.checkbox(
                 message,
                 choices=choices,
-                default=defaults,
+                default=defaults,  # type: ignore[arg-type]
                 style=PROMPT_STYLE,
             ).ask()
             or []

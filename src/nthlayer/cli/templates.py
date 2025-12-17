@@ -54,7 +54,7 @@ def _resource_summary(template) -> str:
     Returns:
         Comma-separated list of resource types
     """
-    kinds = {}
+    kinds: dict[str, int] = {}
     for resource in template.resources:
         kinds[resource.kind] = kinds.get(resource.kind, 0) + 1
 

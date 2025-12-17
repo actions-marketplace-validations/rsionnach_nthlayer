@@ -37,22 +37,23 @@ class LogQLAlert:
         Returns YAML-serializable dict matching Loki ruler format:
         https://grafana.com/docs/loki/latest/alert/
         """
-        rule = {
+        labels: dict[str, str] = {
+            "severity": self.severity,
+            **self.labels,
+        }
+        if self.technology:
+            labels["technology"] = self.technology
+        rule: dict[str, Any] = {
             "alert": self.name,
             "expr": self.expr,
             "for": self.for_duration,
-            "labels": {
-                "severity": self.severity,
-                **self.labels,
-            },
+            "labels": labels,
             "annotations": {
                 "summary": self.summary,
                 "description": self.description,
                 **self.annotations,
             },
         }
-        if self.technology:
-            rule["labels"]["technology"] = self.technology
         return rule
 
     @classmethod

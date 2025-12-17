@@ -66,7 +66,7 @@ class PrometheusProvider(Provider):
         Returns:
             Query result from Prometheus
         """
-        params = {"query": query}
+        params: dict[str, str | float] = {"query": query}
 
         if time is not None:
             params["time"] = time.timestamp()

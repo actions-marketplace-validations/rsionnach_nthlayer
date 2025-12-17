@@ -18,7 +18,7 @@ from nthlayer.specs.parser import parse_service_file, render_resource_spec
 @dataclass
 class SlothGenerationResult:
     """Result of Sloth spec generation."""
-    
+
     success: bool
     service: str
     output_file: Path | None = None
@@ -27,21 +27,19 @@ class SlothGenerationResult:
 
 
 def generate_sloth_spec(
-    service_file: str | Path,
-    output_dir: str | Path,
-    environment: str | None = None
+    service_file: str | Path, output_dir: str | Path, environment: str | None = None
 ) -> SlothGenerationResult:
     """
     Generate Sloth specification YAML from NthLayer service definition.
-    
+
     Args:
         service_file: Path to NthLayer service YAML file
         output_dir: Directory to write Sloth spec
         environment: Optional environment name (dev, staging, prod)
-    
+
     Returns:
         SlothGenerationResult with generation details
-    
+
     Example:
         Input (services/payment-api.yaml):
             service:
@@ -56,7 +54,7 @@ def generate_sloth_spec(
                   window: 30d
                   indicator:
                     query: "..."
-        
+
         Output (generated/sloth/payment-api.yaml):
             version: "prometheus/v1"
             service: "payment-api"
@@ -82,19 +80,20 @@ def generate_sloth_spec(
     try:
         # Parse service file with optional environment overrides
         service_context, resources = parse_service_file(service_file, environment=environment)
-        
+
         # Filter SLO resources
         slo_resources = [r for r in resources if r.kind == "SLO"]
-        
+
         if not slo_resources:
             return SlothGenerationResult(
                 success=False,
                 service=service_context.name,
                 error="No SLO resources found in service definition",
             )
-        
+
         # Build Sloth spec
-        sloth_spec = {
+        slos: list[dict[str, Any]] = []
+        sloth_spec: dict[str, Any] = {
             "version": "prometheus/v1",
             "service": service_context.name,
             "labels": {
@@ -102,38 +101,38 @@ def generate_sloth_spec(
                 "team": service_context.team,
                 "type": service_context.type,
             },
-            "slos": [],
+            "slos": slos,
         }
-        
+
         # Convert each SLO resource to Sloth format
         for slo_resource in slo_resources:
             # Render spec with variable substitution
             rendered_spec = render_resource_spec(slo_resource)
-            
+
             # Convert to Sloth SLO format
             sloth_slo = convert_to_sloth_slo(
                 slo_resource.name or "default",
                 rendered_spec,
                 service_context,
             )
-            
-            sloth_spec["slos"].append(sloth_slo)
-        
+
+            slos.append(sloth_slo)
+
         # Write output
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         output_file = output_dir / f"{service_context.name}.yaml"
         with open(output_file, "w") as f:
             yaml.dump(sloth_spec, f, sort_keys=False, default_flow_style=False)
-        
+
         return SlothGenerationResult(
             success=True,
             service=service_context.name,
             output_file=output_file,
             slo_count=len(slo_resources),
         )
-    
+
     except Exception as e:
         return SlothGenerationResult(
             success=False,
@@ -149,29 +148,29 @@ def convert_to_sloth_slo(
 ) -> dict[str, Any]:
     """
     Convert NthLayer SLO spec to Sloth SLO format.
-    
+
     Args:
         slo_name: Name of the SLO
         spec: Rendered SLO spec with variables substituted
         service_context: Service context for labels
-    
+
     Returns:
         Sloth SLO dict
     """
     objective = spec.get("objective", 99.9)
-    window = spec.get("window", "30d")
+    _window = spec.get("window", "30d")  # Reserved for future use
     indicator = spec.get("indicator", {})
-    
+
     # Build SLI based on indicator type
     sli = convert_indicator_to_sli(indicator)
-    
+
     # Build alerting config
     alerting = generate_alerting_config(
         slo_name,
         service_context.name,
         service_context.tier,
     )
-    
+
     return {
         "name": slo_name,
         "objective": objective,
@@ -184,20 +183,20 @@ def convert_to_sloth_slo(
 def convert_indicator_to_sli(indicator: dict[str, Any]) -> dict[str, Any]:
     """
     Convert NthLayer indicator to Sloth SLI format.
-    
+
     Sloth SLI uses "events" model:
         - error_query: Query for bad events
         - total_query: Query for all events
-    
+
     Args:
         indicator: Indicator spec from resource
-    
+
     Returns:
         Sloth SLI dict
     """
     indicator_type = indicator.get("type", "availability")
     query = indicator.get("query", "")
-    
+
     if indicator_type == "availability":
         # For availability, query should return success ratio
         # We need to convert to error/total format for Sloth
@@ -207,20 +206,20 @@ def convert_indicator_to_sli(indicator: dict[str, Any]) -> dict[str, Any]:
                 "total_query": _extract_total_query(query),
             }
         }
-    
+
     elif indicator_type == "latency":
         # For latency, query should return p95/p99 value
         # Sloth needs error (over threshold) and total queries
         threshold_ms = indicator.get("threshold_ms", 1000)
-        percentile = indicator.get("percentile", 95)
-        
+        _percentile = indicator.get("percentile", 95)  # Reserved for future use
+
         return {
             "events": {
                 "error_query": f"{query} > {threshold_ms / 1000.0}",
                 "total_query": query.replace("histogram_quantile", "sum(rate") + ")",
             }
         }
-    
+
     else:
         # Generic - assume query is already in correct format
         return {
@@ -234,7 +233,7 @@ def convert_indicator_to_sli(indicator: dict[str, Any]) -> dict[str, Any]:
 def _extract_error_query(availability_query: str) -> str:
     """
     Extract error query from availability query.
-    
+
     Input: sum(rate(http[code!~"5.."]])) / sum(rate(http))
     Output: sum(rate(http[code=~"5.."]))
     """
@@ -243,7 +242,7 @@ def _extract_error_query(availability_query: str) -> str:
     if "code!~" in availability_query:
         # Has error exclusion - convert to inclusion
         return availability_query.split("/")[0].strip().replace("code!~", "code=~")
-    
+
     # Default: assume numerator is good events, need to invert
     return availability_query.split("/")[0].strip()
 
@@ -251,13 +250,13 @@ def _extract_error_query(availability_query: str) -> str:
 def _extract_total_query(availability_query: str) -> str:
     """
     Extract total query from availability query.
-    
+
     Input: sum(rate(http[code!~"5.."])) / sum(rate(http))
     Output: sum(rate(http))
     """
     if "/" in availability_query:
         return availability_query.split("/")[1].strip()
-    
+
     return availability_query
 
 
@@ -268,26 +267,22 @@ def generate_alerting_config(
 ) -> dict[str, Any]:
     """
     Generate Sloth alerting configuration.
-    
+
     Creates multi-window, multi-burn-rate alerts based on tier.
-    
+
     Args:
         slo_name: Name of the SLO
         service_name: Service name
         tier: Service tier (critical, standard, low)
-    
+
     Returns:
         Sloth alerting config
     """
     # Alert name in PascalCase
     alert_name = "".join(
-        word.capitalize()
-        for word in service_name.replace("-", " ").split()
-    ) + "".join(
-        word.capitalize()
-        for word in slo_name.replace("-", " ").split()
-    )
-    
+        word.capitalize() for word in service_name.replace("-", " ").split()
+    ) + "".join(word.capitalize() for word in slo_name.replace("-", " ").split())
+
     # Page alert for critical services
     page_alert = None
     if tier == "critical":
@@ -299,7 +294,7 @@ def generate_alerting_config(
                 "summary": f"High error budget burn on {service_name}",
             },
         }
-    
+
     # Ticket alert for all tiers
     ticket_alert = {
         "labels": {
@@ -309,7 +304,7 @@ def generate_alerting_config(
             "summary": f"Error budget burn on {service_name}",
         },
     }
-    
+
     config = {
         "name": alert_name,
         "labels": {
@@ -321,8 +316,8 @@ def generate_alerting_config(
         },
         "ticket_alert": ticket_alert,
     }
-    
+
     if page_alert:
         config["page_alert"] = page_alert
-    
+
     return config

@@ -116,7 +116,7 @@ class DeploymentGate:
     """
 
     # Default thresholds (percentage remaining)
-    THRESHOLDS = {
+    THRESHOLDS: dict[str, dict[str, float | None]] = {
         "critical": {"warning": 20.0, "blocking": 10.0},
         "standard": {"warning": 20.0, "blocking": None},
         "low": {"warning": 30.0, "blocking": None},
@@ -299,8 +299,8 @@ class DeploymentGate:
         """
         # Start with tier defaults
         defaults = self.THRESHOLDS.get(tier, self.THRESHOLDS["standard"])
-        warning = defaults["warning"]
-        blocking = defaults["blocking"]
+        warning = defaults.get("warning") or 20.0  # Fallback to standard threshold
+        blocking = defaults.get("blocking")
 
         if not self.policy:
             return warning, blocking

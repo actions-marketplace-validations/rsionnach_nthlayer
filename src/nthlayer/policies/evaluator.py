@@ -28,7 +28,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 from nthlayer.policies.conditions import (
     is_business_hours,
@@ -106,8 +106,11 @@ class ConditionEvaluator:
     Supports a simple DSL with comparisons, boolean operators, and functions.
     """
 
+    context: dict[str, Any]
+    _policy_context: PolicyContext | None
+
     # Supported comparison operators
-    OPERATORS = {
+    OPERATORS: dict[str, Any] = {
         "==": lambda a, b: a == b,
         "!=": lambda a, b: a != b,
         ">=": lambda a, b: a >= b,
@@ -117,7 +120,7 @@ class ConditionEvaluator:
     }
 
     # Built-in functions
-    FUNCTIONS = {
+    FUNCTIONS: dict[str, Callable[..., bool]] = {
         "business_hours": is_business_hours,
         "weekday": is_weekday,
         "freeze_period": is_freeze_period,

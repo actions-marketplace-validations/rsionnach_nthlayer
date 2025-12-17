@@ -4,7 +4,7 @@ Automatically generates production-ready alert rules based on service dependenci
 """
 
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import yaml
 
@@ -250,7 +250,7 @@ def write_prometheus_yaml(alerts: List[AlertRule], output_file: Path, service_na
         service_name: Name of service (for group naming)
     """
     # Group by technology
-    groups_dict = {}
+    groups_dict: dict[str, list[dict[str, Any]]] = {}
     for alert in alerts:
         tech = alert.technology or "general"
         if tech not in groups_dict:

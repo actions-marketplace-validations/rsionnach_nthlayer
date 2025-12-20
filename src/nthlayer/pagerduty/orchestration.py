@@ -135,9 +135,11 @@ class EventOrchestrationManager:
             )
 
         except (pagerduty.HttpError, pagerduty.ServerHttpError) as e:
+            status = getattr(e.response, "status_code", "unknown")
+            text = getattr(e.response, "text", str(e))
             return OrchestrationResult(
                 success=False,
-                error=f"PagerDuty API error: {e.response.status_code} - {e.response.text}",
+                error=f"PagerDuty API error: {status} - {text}",
             )
         except Exception as e:
             return OrchestrationResult(
@@ -236,9 +238,10 @@ class EventOrchestrationManager:
             response.raise_for_status()
             return {"success": True}
         except (pagerduty.HttpError, pagerduty.ServerHttpError) as e:
+            error_text = getattr(e.response, "text", str(e))
             return {
                 "success": False,
-                "error": f"Failed to update orchestration: {e.response.text}",
+                "error": f"Failed to update orchestration: {error_text}",
             }
 
     def create_sre_routing_rule(
@@ -269,7 +272,6 @@ class EventOrchestrationManager:
         self,
         alerts: list[dict[str, Any]],
         sre_escalation_policy_id: str,
-        team_escalation_policy_id: str,
     ) -> list[RoutingRule]:
         """
         Generate routing rules from alert definitions.
@@ -277,7 +279,6 @@ class EventOrchestrationManager:
         Args:
             alerts: List of alert definitions with optional 'routing' field
             sre_escalation_policy_id: ID of SRE escalation policy
-            team_escalation_policy_id: ID of team escalation policy
 
         Returns:
             List of routing rules for alerts with routing overrides

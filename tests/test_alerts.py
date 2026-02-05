@@ -51,6 +51,59 @@ def test_alert_rule_customize():
     assert "runbooks.example.com/search-api/PostgresqlDown" in customized.annotations["runbook"]
 
 
+def test_alert_rule_customize_with_grafana_url():
+    """Test customizing alert with Grafana dashboard URL"""
+    alert = AlertRule(
+        name="PostgresqlDown",
+        expr="pg_up == 0",
+        severity="critical",
+        technology="postgres",
+    )
+
+    customized = alert.customize_for_service(
+        service_name="payment-api",
+        team="payments",
+        tier="critical",
+        grafana_url="https://grafana.example.com",
+    )
+
+    assert "dashboard" in customized.annotations
+    assert customized.annotations["dashboard"] == (
+        "https://grafana.example.com/d/payment-api-overview?var-service=payment-api"
+    )
+
+
+def test_alert_rule_customize_grafana_url_trailing_slash():
+    """Test that trailing slash in grafana_url is handled correctly"""
+    alert = AlertRule(name="TestAlert", expr="up == 0", severity="warning")
+
+    customized = alert.customize_for_service(
+        service_name="my-service",
+        team="platform",
+        tier="standard",
+        grafana_url="https://grafana.example.com/",  # trailing slash
+    )
+
+    # Should not have double slash
+    assert "//d/" not in customized.annotations["dashboard"]
+    assert customized.annotations["dashboard"] == (
+        "https://grafana.example.com/d/my-service-overview?var-service=my-service"
+    )
+
+
+def test_alert_rule_customize_without_grafana_url():
+    """Test that dashboard annotation is not added when grafana_url is empty"""
+    alert = AlertRule(name="TestAlert", expr="up == 0", severity="warning")
+
+    customized = alert.customize_for_service(
+        service_name="my-service",
+        team="platform",
+        tier="standard",
+    )
+
+    assert "dashboard" not in customized.annotations
+
+
 def test_alert_rule_to_prometheus():
     """Test converting alert to Prometheus format"""
     alert = AlertRule(

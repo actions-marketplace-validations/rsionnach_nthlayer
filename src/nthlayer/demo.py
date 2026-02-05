@@ -551,6 +551,9 @@ def build_parser() -> argparse.ArgumentParser:
     generate_alerts_parser.add_argument(
         "--notification-channel", help="Notification channel (pagerduty, slack, etc.)"
     )
+    generate_alerts_parser.add_argument(
+        "--grafana-url", help="Base URL for Grafana dashboard links"
+    )
 
     validate_parser = subparsers.add_parser("validate", help="Validate service definition")
     validate_parser.add_argument("service_file", help="Path to service YAML file")
@@ -959,6 +962,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 dry_run=args.dry_run,
                 runbook_url=args.runbook_url or "",
                 notification_channel=args.notification_channel or "",
+                grafana_url=getattr(args, "grafana_url", None) or "",
             )
         )
 

@@ -89,6 +89,7 @@ class AlertRule:
         notification_channel: str = "",
         runbook_url: str = "",
         routing: str | None = "",
+        grafana_url: str = "",
     ) -> "AlertRule":
         """
         Customize alert for a specific service.
@@ -100,6 +101,7 @@ class AlertRule:
         - routing: PagerDuty routing (for Event Orchestration)
         - notification_channel: Where to send alerts
         - runbook_url: Link to troubleshooting docs
+        - grafana_url: Link to service dashboard
 
         The routing label is used by PagerDuty Event Orchestration to
         route alerts to different escalation policies:
@@ -136,6 +138,13 @@ class AlertRule:
 
         if runbook_url:
             customized.annotations["runbook"] = f"{runbook_url}/{service_name}/{self.name}"
+
+        if grafana_url:
+            # Dashboard UID follows pattern: {service_name}-overview
+            dashboard_uid = f"{service_name}-overview"
+            customized.annotations["dashboard"] = (
+                f"{grafana_url.rstrip('/')}/d/{dashboard_uid}?var-service={service_name}"
+            )
 
         return customized
 

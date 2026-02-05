@@ -140,6 +140,7 @@ def generate_alerts_from_manifest(
     runbook_url: str = "",
     notification_channel: str = "",
     routing: str | None = None,
+    grafana_url: str = "",
     quiet: bool = False,
 ) -> List[AlertRule]:
     """Generate alerts from ReliabilityManifest.
@@ -150,6 +151,7 @@ def generate_alerts_from_manifest(
         runbook_url: Base URL for runbooks
         notification_channel: Notification channel (pagerduty, slack, etc.)
         routing: PagerDuty routing label. If None, uses manifest.support_model.
+        grafana_url: Base URL for Grafana dashboards
         quiet: If True, suppress progress output
 
     Returns:
@@ -167,6 +169,7 @@ def generate_alerts_from_manifest(
         runbook_url=runbook_url,
         notification_channel=notification_channel,
         routing=alert_routing,
+        grafana_url=grafana_url,
         quiet=quiet,
     )
 
@@ -178,6 +181,7 @@ def generate_alerts_for_service(
     runbook_url: str = "",
     notification_channel: str = "",
     routing: str | None = None,
+    grafana_url: str = "",
     quiet: bool = False,
 ) -> List[AlertRule]:
     """Generate alerts for a service based on its dependencies.
@@ -198,6 +202,7 @@ def generate_alerts_for_service(
         notification_channel: Notification channel (pagerduty, slack, etc.)
         routing: PagerDuty routing label (sre, team, shared). If None, uses
                  service's support_model.
+        grafana_url: Base URL for Grafana dashboards
         quiet: If True, suppress progress output to stdout. Use when calling
                programmatically or when output format is machine-readable.
 
@@ -230,6 +235,7 @@ def generate_alerts_for_service(
         runbook_url=runbook_url,
         notification_channel=notification_channel,
         routing=alert_routing,
+        grafana_url=grafana_url,
         quiet=quiet,
     )
 
@@ -243,6 +249,7 @@ def _generate_alerts_impl(
     runbook_url: str = "",
     notification_channel: str = "",
     routing: str = "",
+    grafana_url: str = "",
     quiet: bool = False,
 ) -> List[AlertRule]:
     """Core alert generation logic shared by both APIs.
@@ -256,6 +263,7 @@ def _generate_alerts_impl(
         runbook_url: Base URL for runbooks
         notification_channel: Notification channel
         routing: PagerDuty routing label
+        grafana_url: Base URL for Grafana dashboards
         quiet: If True, suppress progress output
 
     Returns:
@@ -296,6 +304,7 @@ def _generate_alerts_impl(
                     notification_channel=notification_channel,
                     runbook_url=runbook_url,
                     routing=routing,
+                    grafana_url=grafana_url,
                 )
                 for alert in filtered
             ]

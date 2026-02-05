@@ -14,6 +14,7 @@ def generate_alerts_command(
     dry_run: bool = False,
     runbook_url: str = "",
     notification_channel: str = "",
+    grafana_url: str = "",
 ) -> int:
     """Generate alerts for a service based on dependencies.
 
@@ -27,6 +28,7 @@ def generate_alerts_command(
         dry_run: Preview alerts without writing file
         runbook_url: Base URL for runbook links
         notification_channel: Notification channel (pagerduty, slack, etc.)
+        grafana_url: Base URL for Grafana dashboard links
 
     Returns:
         Exit code (0 for success, 1 for error)
@@ -82,6 +84,7 @@ def generate_alerts_command(
             environment=environment,
             runbook_url=runbook_url,
             notification_channel=notification_channel,
+            grafana_url=grafana_url,
         )
 
         if not alerts:

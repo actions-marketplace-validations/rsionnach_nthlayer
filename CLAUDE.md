@@ -75,7 +75,7 @@ This project uses [Beads](https://github.com/steveyegge/beads) for task tracking
 - **Stop hook** enforces "land the plane" discipline — you cannot end a session with uncommitted changes, unpushed commits, or stale in-progress beads
 
 ### Slash Commands
-- `/project:spec-to-beads <spec-file>` — Decompose a spec into Beads issues with dependency tracking. Do NOT implement — only create the task graph.
+- `/spec-to-beads <spec-file>` — Decompose a spec into Beads issues with dependency tracking. Do NOT implement — only create the task graph.
 
 ### Autonomous Execution
 - Ralph loop prompt: `.claude/ralph-prompt.md`
@@ -107,7 +107,7 @@ Specification files live in `specs/` (or wherever the project currently stores t
 - Lenient validation in `nthlayer validate-metadata` is by design (warns, doesn't fail)
 
 ### Slash Commands
-- `/project:audit-codebase` — Run a systematic codebase audit using the code-auditor subagent. Files findings as dual Beads + GitHub Issues.
+- `/audit-codebase` — Run a systematic codebase audit using the code-auditor subagent. Files findings as dual Beads + GitHub Issues.
 
 <!-- AUTO-MANAGED: learned-patterns -->
 <!-- /AUTO-MANAGED: learned-patterns -->

@@ -64,3 +64,29 @@ bd comment <id> "Specification: FEATURE_SPEC.md - Full implementation details."
 - Create a GitHub release → triggers `.github/workflows/release.yml` → auto-publishes to PyPI
 - Version is defined **only** in `pyproject.toml` (single source of truth via importlib.metadata)
 - **CHANGELOG.md must be updated** before every release with all changes since the last release
+
+## Workflow Tooling
+
+### Beads
+This project uses [Beads](https://github.com/steveyegge/beads) for task tracking. Always use `bd` commands for work management. See `AGENTS.md` for the full Beads workflow.
+
+### Session Lifecycle
+- **SessionStart hook** automatically loads Beads state and recent spec changes
+- **Stop hook** enforces "land the plane" discipline — you cannot end a session with uncommitted changes, unpushed commits, or stale in-progress beads
+
+### Slash Commands
+- `/project:spec-to-beads <spec-file>` — Decompose a spec into Beads issues with dependency tracking. Do NOT implement — only create the task graph.
+
+### Autonomous Execution
+- Ralph loop prompt: `.claude/ralph-prompt.md`
+- Ralph loop runner: `.claude/ralph-loop.sh [max-iterations]`
+- Completion promise: `RALPH_COMPLETE`
+
+### Specs
+Specification files live in `specs/` (or wherever the project currently stores them). When implementing from a spec, always reference the spec file path in Beads task notes for traceability. If you make architectural decisions that diverge from the spec, document them in the task's notes field.
+
+<!-- AUTO-MANAGED: learned-patterns -->
+<!-- /AUTO-MANAGED: learned-patterns -->
+
+<!-- AUTO-MANAGED: discovered-conventions -->
+<!-- /AUTO-MANAGED: discovered-conventions -->

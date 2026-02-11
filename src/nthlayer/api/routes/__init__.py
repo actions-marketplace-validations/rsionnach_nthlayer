@@ -1,3 +1,3 @@
-from nthlayer.api.routes import teams
+from nthlayer.api.routes import teams, webhooks
 
-__all__ = ["teams"]
+__all__ = ["teams", "webhooks"]

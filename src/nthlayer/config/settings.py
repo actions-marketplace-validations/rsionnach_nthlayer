@@ -81,6 +81,14 @@ class Settings(BaseSettings):
     slack_bot_token: str | None = None
     slack_default_channel: str | None = None
 
+    # Deployment webhook secrets
+    deployment_webhook_secret_argocd: str | None = None
+    deployment_webhook_secret_github: str | None = None
+    deployment_webhook_secret_gitlab: str | None = None
+
+    # Enabled deployment providers
+    deployment_providers: list[str] = ["argocd", "github", "gitlab"]
+
     # Queue settings
     sqs_queue_url: str | None = None
     job_queue_backend: str = "memory"  # memory, sqs, redis

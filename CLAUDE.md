@@ -26,11 +26,19 @@ NthLayer: Reliability at build time, not incident time. Validate production read
 - `dependencies/` - Dependency discovery and graphing
   - `discovery.py` - DependencyDiscovery orchestrator
   - `providers/` - kubernetes, prometheus, consul, etcd, backstage providers
+- `deployments/` - Deployment detection via webhooks
+  - `base.py` - BaseDeploymentProvider ABC and DeploymentEvent model
+  - `registry.py` - Provider registry for webhook routing
+  - `providers/` - argocd, github, gitlab webhook parsers
+  - `errors.py` - DeploymentProviderError exception
 - `providers/` - External service integrations (grafana, prometheus, pagerduty, mimir)
 - `identity/` - Service identity resolution across naming conventions
 - `slos/` - SLO definition, validation, and recording rule generation
+  - `deployment.py` - DeploymentRecorder for storing deployment events
 - `alerts/` - Alert rule generation from dependencies and SLOs
 - `validation/` - Metadata and resource validation
+- `api/` - FastAPI webhook endpoints
+  - `routes/webhooks.py` - Deployment webhook receiver
 
 ### Data Flow
 1. Service YAML → ServiceOrchestrator → ResourceDetector (indexes by kind)
@@ -38,6 +46,7 @@ NthLayer: Reliability at build time, not incident time. Validate production read
 3. Dashboard generation: IntentTemplate.get_panel_specs() → MetricResolver.resolve() → Panel objects
 4. Metric resolution: Custom overrides → Discovery → Fallback chain → Guidance
 5. Resource creation: Async providers apply changes (Grafana, PagerDuty, etc.)
+6. Deployment webhooks: Provider parses webhook → DeploymentEvent → DeploymentRecorder → Database
 <!-- /AUTO-MANAGED: architecture -->
 
 ## Task Tracking with Beads (bd)
@@ -170,6 +179,16 @@ Specification files live in `specs/` (or wherever the project currently stores t
 - Auto-generates recording rules and Backstage entities when SLOs exist
 - Auto-generates alerts and dashboards when dependencies exist
 - `plan()` returns preview, `apply()` executes generation
+
+### Deployment Detection Provider Pattern
+- Provider-agnostic webhook handling via `BaseDeploymentProvider` ABC
+- Each provider implements `verify_webhook()` (signature validation) and `parse_webhook()` (payload parsing)
+- Providers return `DeploymentEvent` intermediate model (service, commit_sha, environment, author, etc.)
+- `DeploymentProviderRegistry` maps provider names to implementations
+- Webhook route dispatches based on `/webhooks/deployments/{provider_name}` path parameter
+- `DeploymentRecorder.record_event()` stores events to database for correlation analysis
+- Self-registering providers: import triggers `register_deployment_provider()` at module load
+- Supported providers: ArgoCD (app.sync.succeeded), GitHub Actions (workflow_run.completed), GitLab (Pipeline Hook)
 <!-- /AUTO-MANAGED: learned-patterns -->
 
 <!-- AUTO-MANAGED: discovered-conventions -->
@@ -194,6 +213,13 @@ Specification files live in `specs/` (or wherever the project currently stores t
 - Providers: kubernetes, prometheus, consul, etcd, zookeeper, backstage
 - `DependencyDiscovery` (dependencies/discovery.py) orchestrates multiple providers
 - Uses `IdentityResolver` to normalize service names across providers
+
+### Deployment Detection
+- Deployment providers in `src/nthlayer/deployments/providers/`
+- Each provider extends `BaseDeploymentProvider` with `verify_webhook()` and `parse_webhook()`
+- Providers: argocd, github, gitlab
+- `DeploymentProviderRegistry` (deployments/registry.py) manages provider registration
+- Webhook signature verification via HMAC SHA256 (X-Hub-Signature-256, X-Argo-Signature headers)
 
 ### Async/Await Usage
 - All provider operations are async (health checks, resource creation, discovery)

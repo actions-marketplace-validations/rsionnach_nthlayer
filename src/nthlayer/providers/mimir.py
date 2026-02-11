@@ -11,10 +11,12 @@ from typing import Any
 
 import httpx
 
+from nthlayer.core.errors import ProviderError
+
 DEFAULT_USER_AGENT = "nthlayer-provider-mimir/0.1.0"
 
 
-class MimirRulerError(RuntimeError):
+class MimirRulerError(ProviderError):
     """Raised when Mimir Ruler API encounters an error."""
 
 

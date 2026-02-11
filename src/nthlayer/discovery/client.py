@@ -7,8 +7,7 @@ Queries Prometheus to discover actual metrics for a service, inspired by autogra
 import logging
 from typing import Dict, List, Optional
 
-import requests
-from requests.auth import HTTPBasicAuth
+import httpx
 
 from .classifier import MetricClassifier
 from .models import DiscoveredMetric, DiscoveryResult, MetricType, TechnologyGroup
@@ -36,7 +35,7 @@ class MetricDiscoveryClient:
             bearer_token: Optional bearer token for authentication
         """
         self.prometheus_url = prometheus_url.rstrip("/")
-        self.auth = HTTPBasicAuth(username, password) if username and password else None
+        self.auth = (username, password) if username and password else None
         self.headers = {"Authorization": f"Bearer {bearer_token}"} if bearer_token else {}
         self.classifier = MetricClassifier()
 
@@ -111,7 +110,7 @@ class MetricDiscoveryClient:
             return self._get_metrics_from_endpoint(selector)
 
         try:
-            response = requests.get(
+            response = httpx.get(
                 url, params=params, auth=self.auth, headers=self.headers, timeout=30
             )
             response.raise_for_status()
@@ -161,7 +160,7 @@ class MetricDiscoveryClient:
         params = {"metric": metric_name}
 
         try:
-            response = requests.get(
+            response = httpx.get(
                 url, params=params, auth=self.auth, headers=self.headers, timeout=10
             )
             response.raise_for_status()
@@ -190,7 +189,7 @@ class MetricDiscoveryClient:
         params = {"match[]": full_selector}
 
         try:
-            response = requests.get(
+            response = httpx.get(
                 url, params=params, auth=self.auth, headers=self.headers, timeout=10
             )
             response.raise_for_status()
@@ -229,7 +228,7 @@ class MetricDiscoveryClient:
         filter_by_service = service and service != "unknown"
 
         try:
-            response = requests.get(url, auth=self.auth, headers=self.headers, timeout=30)
+            response = httpx.get(url, auth=self.auth, headers=self.headers, timeout=30)
             response.raise_for_status()
 
             # Parse Prometheus text format

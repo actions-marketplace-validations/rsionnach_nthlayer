@@ -16,11 +16,12 @@ from typing import Any
 
 import httpx
 
+from nthlayer.core.errors import ProviderError
 from nthlayer.dependencies.models import DependencyType, DiscoveredDependency
 from nthlayer.dependencies.providers.base import BaseDepProvider, ProviderHealth
 
 
-class PrometheusDepProviderError(RuntimeError):
+class PrometheusDepProviderError(ProviderError):
     """Raised when Prometheus dependency provider encounters an error."""
 
 

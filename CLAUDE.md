@@ -11,6 +11,35 @@ NthLayer: Reliability at build time, not incident time. Validate production read
 - Always update/extend tests when changing behavior.
 - Never commit secrets (use env vars).
 
+<!-- AUTO-MANAGED: architecture -->
+## Architecture
+
+### Core Modules
+- `orchestrator.py` - Service orchestration: coordinates SLO, alert, dashboard generation from service YAML
+- `dashboards/` - Intent-based dashboard generation with metric resolution
+  - `resolver.py` - MetricResolver: translates intents to Prometheus metrics with fallback chains
+  - `templates/` - Technology-specific intent templates (postgresql, redis, kafka, etc.)
+  - `builder_sdk.py` - Grafana dashboard construction using grafana-foundation-sdk
+- `discovery/` - Metric discovery from Prometheus
+  - `client.py` - MetricDiscoveryClient: queries Prometheus for available metrics
+  - `classifier.py` - Classifies metrics by technology and type
+- `dependencies/` - Dependency discovery and graphing
+  - `discovery.py` - DependencyDiscovery orchestrator
+  - `providers/` - kubernetes, prometheus, consul, etcd, backstage providers
+- `providers/` - External service integrations (grafana, prometheus, pagerduty, mimir)
+- `identity/` - Service identity resolution across naming conventions
+- `slos/` - SLO definition, validation, and recording rule generation
+- `alerts/` - Alert rule generation from dependencies and SLOs
+- `validation/` - Metadata and resource validation
+
+### Data Flow
+1. Service YAML → ServiceOrchestrator → ResourceDetector (indexes by kind)
+2. ResourceDetector determines what to generate (SLOs, alerts, dashboards, etc.)
+3. Dashboard generation: IntentTemplate.get_panel_specs() → MetricResolver.resolve() → Panel objects
+4. Metric resolution: Custom overrides → Discovery → Fallback chain → Guidance
+5. Resource creation: Async providers apply changes (Grafana, PagerDuty, etc.)
+<!-- /AUTO-MANAGED: architecture -->
+
 ## Task Tracking with Beads (bd)
 
 This project uses [beads](https://github.com/steveyegge/beads) for issue tracking. **Always use the `bd` CLI** - never create individual JSON files in `.beads/`.
@@ -88,7 +117,7 @@ Specification files live in `specs/` (or wherever the project currently stores t
 ## Code Review & Audit Rules
 
 ### Architectural invariants
-- Dashboard generation must use `BaseIntentTemplate` subclasses and `grafana-foundation-sdk` — no raw JSON dashboard construction
+- Dashboard generation must use `IntentBasedTemplate` subclasses and `grafana-foundation-sdk` — no raw JSON dashboard construction
 - Metric resolution must go through the resolver (`dashboards/resolver.py`) — do not hardcode metric names in templates
 - All PromQL must use `service="$service"` label selector (not `cluster` or other labels)
 - `histogram_quantile` must include `sum by (le)` — bare `rate()` inside `histogram_quantile` is always a bug
@@ -110,7 +139,65 @@ Specification files live in `specs/` (or wherever the project currently stores t
 - `/audit-codebase` — Run a systematic codebase audit using the code-auditor subagent. Files findings as dual Beads + GitHub Issues.
 
 <!-- AUTO-MANAGED: learned-patterns -->
+## Learned Patterns
+
+### Intent-Based Dashboard Generation
+- Templates extend `IntentBasedTemplate` (from `dashboards/templates/base_intent.py`)
+- Define panels using abstract "intents" instead of hardcoded metric names
+- `get_panel_specs()` returns `List[PanelSpec]` with intent references
+- `MetricResolver` translates intents to actual Prometheus metrics at generation time
+- Resolution waterfall: custom overrides → primary discovery → fallback chain → guidance panels
+- Example: `postgresql.connections` intent resolves to `pg_stat_database_numbackends` or fallback
+
+### Metric Discovery and Resolution
+- `MetricDiscoveryClient` (discovery/client.py) queries Prometheus for available metrics
+- `MetricResolver` (dashboards/resolver.py) resolves intents with fallback chains
+- `discover_for_service(service_name)` populates discovered metrics cache
+- `resolve(intent_name)` returns `ResolutionResult` with status (resolved/fallback/unresolved)
+- Unresolved intents generate guidance panels with exporter installation instructions
+- Supports custom metric overrides from service YAML
+
+### Async Provider Pattern
+- All providers implement async interface: `async def health_check()`, `async def apply()`
+- Use `asyncio.to_thread()` for sync HTTP clients (httpx.Client) to avoid blocking
+- Dependency providers implement `async def discover(service)` and `async def discover_downstream(service)`
+- DependencyDiscovery orchestrator runs providers in parallel with `asyncio.gather()`
+- Provider errors raise `ProviderError` subclasses, never bare `Exception` or `RuntimeError`
+
+### Service Orchestration
+- `ServiceOrchestrator` (orchestrator.py) coordinates resource generation from service YAML
+- `ResourceDetector` builds single-pass index of resources by kind (SLO, Dependencies, etc.)
+- Auto-generates recording rules and Backstage entities when SLOs exist
+- Auto-generates alerts and dashboards when dependencies exist
+- `plan()` returns preview, `apply()` executes generation
 <!-- /AUTO-MANAGED: learned-patterns -->
 
 <!-- AUTO-MANAGED: discovered-conventions -->
+## Discovered Conventions
+
+### Error Handling
+- Always raise `ProviderError` or `NthLayerError` subclasses for application errors
+- Never use bare `Exception` or `RuntimeError` in application code
+- Provider modules define their own error subclasses: `GrafanaProviderError(ProviderError)`
+- Import errors from `nthlayer.core.errors`
+
+### Dashboard Template Architecture
+- Templates live in `src/nthlayer/dashboards/templates/`
+- Technology-specific templates: `{technology}_intent.py` (e.g., `postgresql_intent.py`, `redis_intent.py`)
+- All intent templates extend `IntentBasedTemplate` base class
+- Base class implements `get_panels()` which calls template's `get_panel_specs()`
+- Never construct raw JSON dashboards - always use `grafana-foundation-sdk` and intent templates
+
+### Dependency Discovery
+- Provider implementations in `src/nthlayer/dependencies/providers/`
+- Each provider extends `BaseDepProvider` with async `discover()` and `discover_downstream()`
+- Providers: kubernetes, prometheus, consul, etcd, zookeeper, backstage
+- `DependencyDiscovery` (dependencies/discovery.py) orchestrates multiple providers
+- Uses `IdentityResolver` to normalize service names across providers
+
+### Async/Await Usage
+- All provider operations are async (health checks, resource creation, discovery)
+- Use `asyncio.to_thread()` for sync HTTP operations to avoid blocking event loop
+- Parallel operations use `asyncio.gather()` with `return_exceptions=True`
+- Provider interfaces define `async def aclose()` for cleanup
 <!-- /AUTO-MANAGED: discovered-conventions -->

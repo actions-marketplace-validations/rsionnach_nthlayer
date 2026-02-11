@@ -5,7 +5,7 @@ Tests for Prometheus metric discovery client and classifier.
 
 from unittest.mock import MagicMock, patch
 
-import requests
+import httpx
 from nthlayer.discovery.classifier import MetricClassifier
 from nthlayer.discovery.client import MetricDiscoveryClient
 from nthlayer.discovery.models import (
@@ -43,8 +43,7 @@ class TestMetricDiscoveryClientInit:
         )
 
         assert client.auth is not None
-        assert client.auth.username == "user"
-        assert client.auth.password == "pass"
+        assert client.auth == ("user", "pass")
 
     def test_init_with_bearer_token(self):
         """Test initialization with bearer token."""
@@ -115,7 +114,7 @@ class TestExtractServiceFromSelector:
 class TestGetMetricNames:
     """Tests for _get_metric_names method."""
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metric_names_success(self, mock_get):
         """Test successful metric name discovery."""
         mock_response = MagicMock()
@@ -135,7 +134,7 @@ class TestGetMetricNames:
         assert result == ["http_requests_total", "http_response_time"]
         mock_get.assert_called_once()
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metric_names_api_error(self, mock_get):
         """Test API error response."""
         mock_response = MagicMock()
@@ -147,21 +146,25 @@ class TestGetMetricNames:
 
         assert result == []
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metric_names_connection_error(self, mock_get):
         """Test connection error handling."""
-        mock_get.side_effect = requests.ConnectionError("Connection refused")
+        mock_get.side_effect = httpx.ConnectError("Connection refused")
 
         client = MetricDiscoveryClient("http://prometheus:9090")
         result = client._get_metric_names('{service="api"}')
 
         assert result == []
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metric_names_http_error(self, mock_get):
         """Test HTTP error handling."""
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "500 Server Error",
+            request=httpx.Request("GET", "http://test"),
+            response=httpx.Response(500),
+        )
         mock_get.return_value = mock_response
 
         client = MetricDiscoveryClient("http://prometheus:9090")
@@ -169,7 +172,7 @@ class TestGetMetricNames:
 
         assert result == []
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metric_names_adds_http_prefix(self, mock_get):
         """Test URL without protocol gets http:// prefix."""
         mock_response = MagicMock()
@@ -184,7 +187,7 @@ class TestGetMetricNames:
         # Code adds /api/v1/series first, then wraps with http:// and adds again
         assert call_url == "http://localhost:9090/api/v1/series/api/v1/series"
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metric_names_with_auth(self, mock_get):
         """Test metric names discovery with authentication."""
         mock_response = MagicMock()
@@ -203,7 +206,7 @@ class TestGetMetricNames:
         assert call_kwargs["auth"] is not None
         assert call_kwargs["headers"] == {"Authorization": "Bearer token"}
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metric_names_empty_data(self, mock_get):
         """Test empty data response."""
         mock_response = MagicMock()
@@ -219,7 +222,7 @@ class TestGetMetricNames:
 class TestGetMetricsFromEndpoint:
     """Tests for _get_metrics_from_endpoint method (fallback parser)."""
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_parse_metrics_endpoint(self, mock_get):
         """Test parsing /metrics endpoint."""
         mock_response = MagicMock()
@@ -237,7 +240,7 @@ http_response_time{service="api"} 0.5
         assert "http_requests_total" in result
         assert "http_response_time" in result
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_parse_metrics_without_labels(self, mock_get):
         """Test parsing metrics without labels."""
         mock_response = MagicMock()
@@ -254,7 +257,7 @@ process_cpu_seconds_total 10.5
         assert "up" in result
         assert "process_cpu_seconds_total" in result
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_parse_metrics_filters_by_service(self, mock_get):
         """Test filtering metrics by service label."""
         mock_response = MagicMock()
@@ -271,17 +274,17 @@ other_metric{service="api"} 10
         assert "http_requests" in result
         assert "other_metric" in result
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_parse_metrics_connection_error(self, mock_get):
         """Test connection error handling for /metrics endpoint."""
-        mock_get.side_effect = requests.ConnectionError("Connection refused")
+        mock_get.side_effect = httpx.ConnectError("Connection refused")
 
         client = MetricDiscoveryClient("http://app.fly.dev")
         result = client._get_metrics_from_endpoint('{service="api"}')
 
         assert result == []
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_parse_metrics_skips_comments(self, mock_get):
         """Test comments are skipped."""
         mock_response = MagicMock()
@@ -300,7 +303,7 @@ metric 1
 class TestGetMetricMetadata:
     """Tests for _get_metric_metadata method."""
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metadata_success(self, mock_get):
         """Test successful metadata retrieval."""
         mock_response = MagicMock()
@@ -316,7 +319,7 @@ class TestGetMetricMetadata:
         assert result["type"] == "counter"
         assert result["help"] == "Total HTTP requests"
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metadata_not_found(self, mock_get):
         """Test metadata not found."""
         mock_response = MagicMock()
@@ -328,7 +331,7 @@ class TestGetMetricMetadata:
 
         assert result == {}
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metadata_api_error(self, mock_get):
         """Test API error handling."""
         mock_response = MagicMock()
@@ -340,10 +343,10 @@ class TestGetMetricMetadata:
 
         assert result == {}
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_metadata_connection_error(self, mock_get):
         """Test connection error handling."""
-        mock_get.side_effect = requests.ConnectionError("Connection refused")
+        mock_get.side_effect = httpx.ConnectError("Connection refused")
 
         client = MetricDiscoveryClient("http://prometheus:9090")
         result = client._get_metric_metadata("metric")
@@ -354,7 +357,7 @@ class TestGetMetricMetadata:
 class TestGetLabelValues:
     """Tests for _get_label_values method."""
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_labels_success(self, mock_get):
         """Test successful label retrieval."""
         mock_response = MagicMock()
@@ -374,7 +377,7 @@ class TestGetLabelValues:
         assert result["method"] == ["GET", "POST"]
         assert result["status"] == ["200", "201", "500"]
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_labels_excludes_name(self, mock_get):
         """Test __name__ label is excluded."""
         mock_response = MagicMock()
@@ -390,7 +393,7 @@ class TestGetLabelValues:
         assert "__name__" not in result
         assert result["label"] == ["value"]
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_labels_api_error(self, mock_get):
         """Test API error handling."""
         mock_response = MagicMock()
@@ -402,10 +405,10 @@ class TestGetLabelValues:
 
         assert result == {}
 
-    @patch("nthlayer.discovery.client.requests.get")
+    @patch("nthlayer.discovery.client.httpx.get")
     def test_get_labels_connection_error(self, mock_get):
         """Test connection error handling."""
-        mock_get.side_effect = requests.ConnectionError("Connection refused")
+        mock_get.side_effect = httpx.ConnectError("Connection refused")
 
         client = MetricDiscoveryClient("http://prometheus:9090")
         result = client._get_label_values("metric", "{}")

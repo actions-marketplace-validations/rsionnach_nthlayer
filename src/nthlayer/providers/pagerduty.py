@@ -7,6 +7,7 @@ import httpx
 import pagerduty
 from pagerduty import RestApiV2Client
 
+from nthlayer.core.errors import ProviderError
 from nthlayer.providers.base import (
     PlanChange,
     PlanResult,
@@ -20,7 +21,7 @@ from nthlayer.providers.registry import register_provider
 DEFAULT_USER_AGENT = "nthlayer-provider-pagerduty/0.1.0"
 
 
-class PagerDutyProviderError(RuntimeError):
+class PagerDutyProviderError(ProviderError):
     """Raised when the PagerDuty provider encounters an error."""
 
 
@@ -146,8 +147,16 @@ class PagerDutyTeamMembershipResource(ProviderResource):
         memberships = await self._provider.get_team_members(self._team_id)
         current_ids = sorted({member["user"]["id"] for member in memberships if member.get("user")})
 
-        additions = [PlanChange("create", {"user_id": user_id}) for user_id in desired_ids if user_id not in current_ids]
-        removals = [PlanChange("delete", {"user_id": user_id}) for user_id in current_ids if user_id not in desired_ids]
+        additions = [
+            PlanChange("create", {"user_id": user_id})
+            for user_id in desired_ids
+            if user_id not in current_ids
+        ]
+        removals = [
+            PlanChange("delete", {"user_id": user_id})
+            for user_id in current_ids
+            if user_id not in desired_ids
+        ]
         metadata = {
             "current_ids": current_ids,
             "desired_ids": desired_ids,

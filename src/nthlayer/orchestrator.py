@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from nthlayer.alertmanager import generate_alertmanager_config
+from nthlayer.core.errors import ProviderError
 from nthlayer.pagerduty import EventOrchestrationManager, PagerDutyResourceManager
 
 
@@ -718,7 +719,7 @@ class ServiceOrchestrator:
             )
 
         if not result.success:
-            raise RuntimeError(f"PagerDuty setup failed: {', '.join(result.errors)}")
+            raise ProviderError(f"PagerDuty setup failed: {', '.join(result.errors)}")
 
         # Save result to file
         output_file = output_dir / "pagerduty-result.json"

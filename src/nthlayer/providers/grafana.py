@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 
+from nthlayer.core.errors import ProviderError
 from nthlayer.providers.base import (
     PlanChange,
     PlanResult,
@@ -18,7 +19,7 @@ from nthlayer.providers.registry import register_provider
 DEFAULT_USER_AGENT = "nthlayer-provider-grafana/0.1.0"
 
 
-class GrafanaProviderError(RuntimeError):
+class GrafanaProviderError(ProviderError):
     pass
 
 
@@ -117,7 +118,9 @@ class GrafanaFolderResource(ProviderResource):
     async def drift(self, desired_state: dict[str, Any]) -> PlanResult:
         return await self.plan(desired_state)
 
-    async def apply(self, desired_state: dict[str, Any], *, idempotency_key: str | None = None) -> None:
+    async def apply(
+        self, desired_state: dict[str, Any], *, idempotency_key: str | None = None
+    ) -> None:
         title = desired_state.get("title")
         try:
             await self._p._request("GET", f"/api/folders/uid/{self._uid}")
@@ -166,7 +169,9 @@ class GrafanaDashboardResource(ProviderResource):
     async def drift(self, desired_state: dict[str, Any]) -> PlanResult:
         return await self.plan(desired_state)
 
-    async def apply(self, desired_state: dict[str, Any], *, idempotency_key: str | None = None) -> None:
+    async def apply(
+        self, desired_state: dict[str, Any], *, idempotency_key: str | None = None
+    ) -> None:
         dashboard = desired_state.get("dashboard") or {
             "uid": self._uid,
             "title": desired_state.get("title"),
@@ -213,7 +218,9 @@ class GrafanaDatasourceResource(ProviderResource):
     async def drift(self, desired_state: dict[str, Any]) -> PlanResult:
         return await self.plan(desired_state)
 
-    async def apply(self, desired_state: dict[str, Any], *, idempotency_key: str | None = None) -> None:
+    async def apply(
+        self, desired_state: dict[str, Any], *, idempotency_key: str | None = None
+    ) -> None:
         try:
             ds = await self._p._request("GET", f"/api/datasources/name/{self._name}")
             ds_id = ds.get("id")

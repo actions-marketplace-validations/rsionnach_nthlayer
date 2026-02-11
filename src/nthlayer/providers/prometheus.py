@@ -11,12 +11,13 @@ from typing import Any
 
 import httpx
 
+from nthlayer.core.errors import ProviderError
 from nthlayer.providers.base import Provider, ProviderHealth, ProviderResourceSchema
 
 DEFAULT_USER_AGENT = "nthlayer-provider-prometheus/0.1.0"
 
 
-class PrometheusProviderError(RuntimeError):
+class PrometheusProviderError(ProviderError):
     """Raised when Prometheus provider encounters an error."""
 
 

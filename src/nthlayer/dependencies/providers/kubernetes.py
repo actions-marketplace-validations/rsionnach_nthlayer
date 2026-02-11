@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any
 
+from nthlayer.core.errors import ProviderError
 from nthlayer.dependencies.models import DependencyType, DiscoveredDependency
 from nthlayer.dependencies.providers.base import BaseDepProvider, ProviderHealth
 
@@ -37,7 +38,7 @@ def _check_kubernetes_available() -> bool:
     return _kubernetes_available
 
 
-class KubernetesDepProviderError(RuntimeError):
+class KubernetesDepProviderError(ProviderError):
     """Raised when Kubernetes dependency provider encounters an error."""
 
 

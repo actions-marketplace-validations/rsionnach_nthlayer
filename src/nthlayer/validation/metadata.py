@@ -536,13 +536,13 @@ class MetadataValidator:
         return validator
 
     @classmethod
-    def strict(cls) -> "MetadataValidator":
+    def strict(cls, check_urls: bool = False) -> "MetadataValidator":
         """Create validator with strict requirements."""
         validator = cls()
         validator.add_validator(HasRequiredLabels(["severity", "team", "service"]))
         validator.add_validator(HasRequiredAnnotations(["summary", "description", "runbook_url"]))
         validator.add_validator(ValidSeverityLevel())
-        validator.add_validator(ValidRunbookUrl(check_accessibility=False))
+        validator.add_validator(ValidRunbookUrl(check_accessibility=check_urls))
         validator.add_validator(NoEmptyLabels())
         validator.add_validator(NoEmptyAnnotations())
         validator.add_validator(RangeQueryMaxDuration(max_duration="15d"))
@@ -653,10 +653,7 @@ def validate_metadata(
         ValidationResult with any issues found
     """
     if strict:
-        validator = MetadataValidator.strict()
-        if check_urls:
-            # Add URL accessibility check
-            validator.add_validator(ValidRunbookUrl(check_accessibility=True))
+        validator = MetadataValidator.strict(check_urls=check_urls)
     else:
         validator = MetadataValidator.default()
 

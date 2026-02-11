@@ -114,8 +114,15 @@ class IntentBasedTemplate(TechnologyTemplate):
             result = self._resolve_intent(query_spec.intent)
 
             if result.resolved and result.metric_name:
+                # Resolve extra intents for this query
+                extra_metrics: Dict[str, str] = {}
+                for placeholder, extra_intent in query_spec.extra_intents.items():
+                    extra_result = self._resolve_intent(extra_intent)
+                    if extra_result.resolved and extra_result.metric_name:
+                        extra_metrics[placeholder] = extra_result.metric_name
+
                 # Build target with resolved metric
-                expr = query_spec.build_query(result.metric_name, service_name)
+                expr = query_spec.build_query(result.metric_name, service_name, extra_metrics)
                 metric_prefix = result.metric_name.split("_")[0]
                 targets.append(
                     Target(

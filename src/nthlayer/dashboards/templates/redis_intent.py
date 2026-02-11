@@ -15,15 +15,15 @@ from nthlayer.dashboards.templates.base_intent import IntentBasedTemplate
 
 class RedisIntentTemplate(IntentBasedTemplate):
     """Redis monitoring template using intent-based metrics."""
-    
+
     @property
     def name(self) -> str:
         return "redis"
-    
+
     @property
     def display_name(self) -> str:
         return "Redis"
-    
+
     def get_panel_specs(self, service_name: str = "$service") -> List[PanelSpec]:
         """Get Redis panel specifications with intents."""
         return [
@@ -36,7 +36,7 @@ class RedisIntentTemplate(IntentBasedTemplate):
             self._commands_spec(service_name),
             self._keys_spec(service_name),
         ]
-    
+
     def get_overview_panels(self, service_name: str = "$service") -> List:
         """Get most critical Redis panels."""
         specs = [
@@ -50,7 +50,7 @@ class RedisIntentTemplate(IntentBasedTemplate):
             if panel:
                 panels.append(panel)
         return panels
-    
+
     def _memory_usage_spec(self, service: str) -> PanelSpec:
         """Redis memory usage panel spec."""
         return PanelSpec(
@@ -59,9 +59,9 @@ class RedisIntentTemplate(IntentBasedTemplate):
             intent="redis.memory",
             query_template=f'{{{{metric}}}}{{service="{service}"}}',
             unit="bytes",
-            description="Redis memory consumption"
+            description="Redis memory consumption",
         )
-    
+
     def _hit_rate_spec(self, service: str) -> PanelSpec:
         """Cache hit rate panel spec."""
         return PanelSpec(
@@ -70,17 +70,18 @@ class RedisIntentTemplate(IntentBasedTemplate):
             queries=[
                 QuerySpec(
                     intent="redis.hits",
-                    query_template=f'''sum(rate({{{{metric}}}}{{service="{service}"}}[5m])) / 
-(sum(rate({{{{metric}}}}{{service="{service}"}}[5m])) + 
-sum(rate(cache_misses_total{{service="{service}"}}[5m]))) * 100''',
+                    query_template=f"""sum(rate({{{{metric}}}}{{service="{service}"}}[5m])) /
+(sum(rate({{{{metric}}}}{{service="{service}"}}[5m])) +
+sum(rate({{{{metric_misses}}}}{{service="{service}"}}[5m]))) * 100""",
                     legend="Hit rate %",
-                    ref_id="A"
+                    ref_id="A",
+                    extra_intents={"metric_misses": "redis.misses"},
                 ),
             ],
             unit="percent",
-            description="Cache hit rate - should be >90% for good performance"
+            description="Cache hit rate - should be >90% for good performance",
         )
-    
+
     def _connected_clients_spec(self, service: str) -> PanelSpec:
         """Connected clients panel spec."""
         return PanelSpec(
@@ -89,9 +90,9 @@ sum(rate(cache_misses_total{{service="{service}"}}[5m]))) * 100''',
             intent="redis.connections",
             query_template=f'{{{{metric}}}}{{service="{service}"}}',
             unit="short",
-            description="Number of connected clients"
+            description="Number of connected clients",
         )
-    
+
     def _hits_misses_spec(self, service: str) -> PanelSpec:
         """Cache hits vs misses panel spec."""
         return PanelSpec(
@@ -102,19 +103,19 @@ sum(rate(cache_misses_total{{service="{service}"}}[5m]))) * 100''',
                     intent="redis.hits",
                     query_template=f'rate({{{{metric}}}}{{service="{service}"}}[5m])',
                     legend="Hits/sec",
-                    ref_id="A"
+                    ref_id="A",
                 ),
                 QuerySpec(
                     intent="redis.misses",
                     query_template=f'rate({{{{metric}}}}{{service="{service}"}}[5m])',
                     legend="Misses/sec",
-                    ref_id="B"
+                    ref_id="B",
                 ),
             ],
             unit="short",
-            description="Cache hits and misses per second"
+            description="Cache hits and misses per second",
         )
-    
+
     def _evictions_spec(self, service: str) -> PanelSpec:
         """Evicted keys panel spec."""
         return PanelSpec(
@@ -123,9 +124,9 @@ sum(rate(cache_misses_total{{service="{service}"}}[5m]))) * 100''',
             intent="redis.evicted_keys",
             query_template=f'rate({{{{metric}}}}{{service="{service}"}}[5m])',
             unit="short",
-            description="Keys evicted due to memory pressure - should be zero"
+            description="Keys evicted due to memory pressure - should be zero",
         )
-    
+
     def _expired_keys_spec(self, service: str) -> PanelSpec:
         """Expired keys panel spec."""
         return PanelSpec(
@@ -134,9 +135,9 @@ sum(rate(cache_misses_total{{service="{service}"}}[5m]))) * 100''',
             intent="redis.expired_keys",
             query_template=f'rate({{{{metric}}}}{{service="{service}"}}[5m])',
             unit="short",
-            description="Keys expired per second due to TTL"
+            description="Keys expired per second due to TTL",
         )
-    
+
     def _commands_spec(self, service: str) -> PanelSpec:
         """Commands per second panel spec."""
         return PanelSpec(
@@ -145,9 +146,9 @@ sum(rate(cache_misses_total{{service="{service}"}}[5m]))) * 100''',
             intent="redis.commands",
             query_template=f'rate({{{{metric}}}}{{service="{service}"}}[5m])',
             unit="short",
-            description="Redis commands processed per second"
+            description="Redis commands processed per second",
         )
-    
+
     def _keys_spec(self, service: str) -> PanelSpec:
         """Total keys panel spec."""
         return PanelSpec(
@@ -156,5 +157,5 @@ sum(rate(cache_misses_total{{service="{service}"}}[5m]))) * 100''',
             intent="redis.keys",
             query_template=f'sum({{{{metric}}}}{{service="{service}"}})',
             unit="short",
-            description="Total number of keys in database"
+            description="Total number of keys in database",
         )

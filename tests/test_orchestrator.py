@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from nthlayer.core.errors import ProviderError
 from nthlayer.orchestrator import (
     ApplyResult,
     PlanResult,
@@ -707,7 +708,7 @@ class TestOrchestratorGenerateMethods:
         orchestrator.output_dir = tmp_path
         orchestrator._load_service()
 
-        with pytest.raises(RuntimeError) as exc:
+        with pytest.raises(ProviderError) as exc:
             orchestrator._generate_pagerduty()
 
         assert "PagerDuty setup failed" in str(exc.value)

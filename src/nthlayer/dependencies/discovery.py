@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 
+from nthlayer.core.errors import ProviderError
 from nthlayer.dependencies.models import (
     BlastRadiusResult,
     DependencyGraph,
@@ -21,7 +22,7 @@ from nthlayer.dependencies.providers.base import BaseDepProvider, ProviderHealth
 from nthlayer.identity import IdentityResolver, ServiceIdentity
 
 
-class DiscoveryError(RuntimeError):
+class DiscoveryError(ProviderError):
     """Raised when dependency discovery encounters an error."""
 
 

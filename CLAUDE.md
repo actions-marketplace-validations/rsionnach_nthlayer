@@ -7,7 +7,7 @@ Reliability at build time, not incident time. Validate production readiness in C
 - **Language:** Python
 - **Build:** `pip install -e .`
 - **Test:** `make test`
-- **Lint:** `make lint` / `./scripts/lint/run-all.sh`
+- **Lint:** `make lint` and `./scripts/lint/run-all.sh` (custom golden-principle linters)
 - **Typecheck:** `make typecheck`
 - **Format:** `make format`
 
@@ -88,6 +88,8 @@ When fixing a GitHub Issue: `fix: <description> (<bead-id>, closes #<number>)`
   - `registry.py` - Provider registry for webhook routing
   - `providers/` - argocd, github, gitlab webhook parsers
   - `errors.py` - DeploymentProviderError exception
+- `drift/` - Reliability drift detection and trend analysis
+  - `analyzer.py` - DriftAnalyzer for SLO trend analysis with configurable windows
 - `providers/` - External service integrations (grafana, prometheus, pagerduty, mimir)
 - `identity/` - Service identity resolution across naming conventions
 - `slos/` - SLO definition, validation, and recording rule generation
@@ -96,6 +98,21 @@ When fixing a GitHub Issue: `fix: <description> (<bead-id>, closes #<number>)`
 - `validation/` - Metadata and resource validation
 - `api/` - FastAPI webhook endpoints
   - `routes/webhooks.py` - Deployment webhook receiver
+- `scripts/lint/` - Custom linters for golden principles
+  - `check-exception-handling.sh` - Enforce exception handling with context
+  - `check-no-orphan-todos.sh` - Enforce TODO tracking via Beads
+  - `check-no-unstructured-logging.sh` - Enforce structured logging
+  - `run-all.sh` - Orchestrator for all lint rules
+- `docs/` - Standalone documentation files
+  - `architecture.md` - Architecture details and invariants
+  - `conventions.md` - Coding conventions and Beads workflow
+  - `golden-principles.md` - Mechanical enforcement rules
+  - `testing.md` - Test patterns and commands
+  - `quality.md` - Package quality grades
+- `plans/` - Execution plan tracking
+  - `active/` - In-progress spec implementations
+  - `completed/` - Finished plans
+  - `tech-debt.md` - Technical debt inventory
 
 ### Data Flow
 1. Service YAML → ServiceOrchestrator → ResourceDetector (indexes by kind)
@@ -104,6 +121,7 @@ When fixing a GitHub Issue: `fix: <description> (<bead-id>, closes #<number>)`
 4. Metric resolution: Custom overrides → Discovery → Fallback chain → Guidance
 5. Resource creation: Async providers apply changes (Grafana, PagerDuty, etc.)
 6. Deployment webhooks: Provider parses webhook → DeploymentEvent → DeploymentRecorder → Database
+7. Drift analysis: DriftAnalyzer queries Prometheus for trend analysis → severity assessment (CRITICAL/WARN/OK)
 <!-- /AUTO-MANAGED: architecture -->
 
 <!-- AUTO-MANAGED: learned-patterns -->
@@ -148,6 +166,37 @@ When fixing a GitHub Issue: `fix: <description> (<bead-id>, closes #<number>)`
 - `DeploymentRecorder.record_event()` stores events to database for correlation analysis
 - Self-registering providers: import triggers `register_deployment_provider()` at module load
 - Supported providers: ArgoCD (app.sync.succeeded), GitHub Actions (workflow_run.completed), GitLab (Pipeline Hook)
+
+### Drift Analysis Integration
+- `DriftAnalyzer` (drift/analyzer.py) detects reliability trend degradation
+- Integrated into `portfolio` and `deploy` CLI commands via `--drift` flag
+- Configurable analysis windows (default from tier-specific config)
+- Results include severity (CRITICAL/WARN/OK) and trend direction
+- Tier-based thresholds determine when drift blocks deployments
+- Exit code escalation: drift severity can upgrade warning (1) to critical (2)
+- Portfolio aggregation: drift results included in JSON/CSV/Markdown output
+
+### Golden Principles Enforcement
+- Mechanical rules enforced via custom lint scripts in `scripts/lint/`
+- Promotion ladder: Documentation → Convention Check → Lint → Structural Test
+- Three enforced principles: structured logging, exception handling, TODO tracking
+- `run-all.sh` orchestrator executes all check-*.sh scripts
+- Called from CI and Claude Code hooks
+- Failures block commits with remediation instructions
+
+### Documentation Site
+- MkDocs Material theme with navigation sections and search
+- Mermaid diagram support for architecture visualization
+- Deployed to GitHub Pages at rsionnach.github.io/nthlayer/
+- Source docs in `docs-site/`, built output in `site/`
+- Nav structure: Getting Started → Generate → Validate → Protect → Reference
+
+### Execution Plan Tracking
+- Plans live in `plans/active/` during implementation, move to `plans/completed/` when done
+- Format: `YYYY-MM-DD-<slug>.md` with metadata, requirements checklist, decision log, deviation log
+- Created by `/spec-to-beads`, updated during implementation
+- Decision log tracks architectural choices that diverge from or clarify specs
+- Deviation log defends against spec drift
 <!-- /AUTO-MANAGED: learned-patterns -->
 
 <!-- AUTO-MANAGED: discovered-conventions -->
@@ -179,10 +228,19 @@ When fixing a GitHub Issue: `fix: <description> (<bead-id>, closes #<number>)`
 - Providers: argocd, github, gitlab
 - `DeploymentProviderRegistry` (deployments/registry.py) manages provider registration
 - Webhook signature verification via HMAC SHA256 (X-Hub-Signature-256, X-Argo-Signature headers)
+- FastAPI webhook endpoint: `POST /webhooks/deployments/{provider_name}`
+- Response codes: 201 (recorded), 204 (skipped), 401 (invalid signature), 404 (unknown provider)
 
 ### Async/Await Usage
 - All provider operations are async (health checks, resource creation, discovery)
 - Use `asyncio.to_thread()` for sync HTTP operations to avoid blocking event loop
 - Parallel operations use `asyncio.gather()` with `return_exceptions=True`
 - Provider interfaces define `async def aclose()` for cleanup
+
+### CLI Drift Analysis
+- `nthlayer portfolio --drift` includes trend analysis for all services
+- `nthlayer check-deploy --include-drift` checks deployment gate with drift detection
+- Drift window configurable via `--drift-window` (e.g., "30d")
+- Results displayed in table/JSON/CSV/markdown formats
+- Exit code escalation: CRITICAL drift → exit 2, WARN → exit 1
 <!-- /AUTO-MANAGED: discovered-conventions -->

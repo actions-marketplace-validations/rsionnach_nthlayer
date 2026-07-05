@@ -1,76 +1,84 @@
 # Contributing to NthLayer
 
-First off, thank you for considering contributing to NthLayer! We're in early alpha and actively seeking feedback from the SRE/DevOps community.
+Thank you for considering contributing to NthLayer! We're in active v1.5
+development and seeking feedback from the SRE/DevOps community.
 
-## Ways to Contribute
+This repository (`nthlayer`) is the **project front door + ecosystem hub**: it
+hosts the GitHub Action, the PyPI meta-package, ecosystem-wide documentation,
+integration-test infrastructure, demo materials, and the architectural design
+corpus. **It contains no application code** — implementation lives in the
+per-tier component repos. If your change is Python source, it belongs in one
+of those repos, each of which has its own `CONTRIBUTING.md`:
+
+| Looking to change… | Contribute in… |
+|---|---|
+| Generator (specs → artifacts) | [`nthlayer-generate`](https://github.com/rsionnach/nthlayer-generate) |
+| Shared library / models / LLM wrapper | [`nthlayer-common`](https://github.com/rsionnach/nthlayer-common) |
+| HTTP API, verdict store, cases | [`nthlayer-core`](https://github.com/rsionnach/nthlayer-core) |
+| observe / measure / correlate / respond / learn (Tier 2 worker modules) | [`nthlayer-workers`](https://github.com/rsionnach/nthlayer-workers) |
+| Operator TUI | [`nthlayer-bench`](https://github.com/rsionnach/nthlayer-bench) |
+| The OpenSRM spec itself | [`opensrm`](https://github.com/rsionnach/opensrm) |
+
+## Ways to Contribute Here
 
 ### 1. Try It Out and Share Feedback
 
-The most valuable contribution right now is **using NthLayer on a real service** and telling us what works and what doesn't:
+The most valuable contribution right now is **using NthLayer on a real
+service** and telling us what works and what doesn't:
 
-- [Open a Discussion](https://github.com/rsionnach/nthlayer/discussions) to share your experience
-- [Report bugs](https://github.com/rsionnach/nthlayer/issues/new?labels=bug) you encounter
-- [Request features](https://github.com/rsionnach/nthlayer/issues/new?labels=enhancement) that would help your workflow
+- [Open a Discussion](https://github.com/rsionnach/nthlayer/discussions)
+- [Report bugs](https://github.com/rsionnach/nthlayer/issues/new?labels=bug)
+- [Request features](https://github.com/rsionnach/nthlayer/issues/new?labels=enhancement)
 
-### 2. Code Contributions
+### 2. Documentation
 
-We welcome pull requests! Here's how to get started:
+Most changes here are docs. The corpus lives under `docs/`
+(`docs/specs/`, `docs/roadmap/`, `docs/superpowers/`), plus `README.md`,
+`CHANGELOG.md`, and the MkDocs site source in `docs-site/` / `mkdocs.yml`.
+Fix typos, clarify explanations, and add examples.
+
+### 3. Demo & Integration-Test Infrastructure
+
+- `demo/` — the runnable cascading-failure scenario (`demo.sh`).
+- `test/` — cross-repo integration harness
+  (`test/integration-three-tier.sh`); see `docs/integration-testing.md`.
+
+These are Bash. CI (`.github/workflows/ci.yml`) runs `bash -n` syntax checks
+across `demo/` and `test/` shell scripts — keep them parseable.
+
+### 4. The GitHub Action & Meta-Package
+
+- `action.yml` delegates to `nthlayer-generate` at a **pinned tag** (never
+  `main`) — keep that pin intact.
+- `meta-package/` is the dependency-only source of `pip install nthlayer`.
+
+## Development Setup
+
+There is no venv or build for the front door itself. To work on docs/demo:
 
 ```bash
-# Install uv (https://docs.astral.sh/uv/)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Clone and setup
 git clone https://github.com/rsionnach/nthlayer.git
 cd nthlayer
-uv sync --extra dev      # Install dependencies from lockfile
 
-# Install pre-commit hooks (required)
-make pre-commit-install
+# Validate shell scripts the way CI does
+bash -n demo/*.sh test/*.sh
 
-# Run tests
-make test
-
-# Run linting
-make lint
+# Preview the docs site (optional)
+uv run --with mkdocs-material mkdocs serve
 ```
 
-#### Pull Request Process
+To run the actual tools, install or work in the component repos (e.g.
+`uv run --directory ../nthlayer-generate ...`).
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Ensure tests pass (`make test`)
-5. Ensure linting passes (`make lint`)
-6. Commit with a descriptive message
-7. Push to your fork and open a PR
+## Pull Request Process
 
-### 3. Documentation
-
-Help us improve documentation:
-
-- Fix typos or unclear explanations
-- Add examples for your use case
-- Improve the getting started guide
-
-### 4. Technology Templates
-
-Add support for new technologies:
-
-- Kafka, RabbitMQ, Cassandra, etc.
-- Cloud-specific metrics (AWS RDS, GCP Cloud SQL)
-- Custom application metrics
-
-See `src/nthlayer/dashboards/templates/` for existing templates.
+1. Fork the repository and create a feature branch off `main`.
+2. Make your change.
+3. For shell changes, confirm `bash -n` passes.
+4. Commit using Conventional Commits (see below).
+5. Push to your fork and open a PR against `main`.
 
 ## Development Guidelines
-
-### Code Style
-
-- Python 3.11+
-- Type hints required
-- Ruff for linting and formatting (enforced by pre-commit)
-- Follow existing patterns in the codebase
 
 ### Commit Messages
 
@@ -80,22 +88,36 @@ See `src/nthlayer/dashboards/templates/` for existing templates.
 <optional body>
 ```
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+For the meta-package changelog: `feat` / `fix` / `deps` / `docs` surface;
+`chore` / `test` / `ci` / `build` / `style` / `refactor` are hidden.
 
-### Testing
+### Tag Namespaces (do not cross them)
 
-- Add tests for new features
-- Ensure existing tests pass
-- Integration tests in `tests/integration/`
+- `v0.1.0a*` — legacy generator releases (historical).
+- `meta-v*` — PyPI meta-package releases (triggers `release.yml`).
+- Sub-package `v*` tags live in their own repos.
 
-## Questions?
+## Finding Something to Work On
 
-- [GitHub Discussions](https://github.com/rsionnach/nthlayer/discussions) - General questions
-- [GitHub Issues](https://github.com/rsionnach/nthlayer/issues) - Bug reports and feature requests
+Browse [open issues](https://github.com/rsionnach/nthlayer/issues) and look for
+`good-first-issue` / `help-wanted` labels. Maintainers track detailed work in
+**Beads**, a Dolt-backed board in the `opensrm` repo
+(`cd ../opensrm && bd ready --json`) — you don't need it to contribute.
 
 ## Code of Conduct
 
-Be respectful and constructive. We're all here to build better reliability tooling.
+Be respectful and constructive — we're all here to build better reliability
+tooling.
+
+## Questions?
+
+- [GitHub Issues](https://github.com/rsionnach/nthlayer/issues) — bugs and features.
+- [GitHub Discussions](https://github.com/rsionnach/nthlayer/discussions) — general questions.
+
+## License
+
+By contributing, you agree that your contributions will be licensed under
+this repository's license (see `LICENSE`).
 
 ---
 

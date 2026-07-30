@@ -1,5 +1,108 @@
 # Changelog
 
+## v0.1.0a18 (March 6, 2026)
+
+### Build-Time Policy Engine
+
+- **Policy engine core** (`policies/engine.py`, `policies/rules.py`, `policies/models.py`) — evaluate policies against service specs at build time
+  - Required fields validation with dot-path resolution (e.g., `ownership.runbook`)
+  - Tier constraint enforcement (min SLOs, deployment gates, ownership requirements)
+  - Dependency rules (critical deps must have SLOs, max critical dep limits)
+  - Central `policies.yaml` for org-wide defaults + per-service `PolicyRules` resource overrides
+- **CLI integration** — `nthlayer validate --policies <policies.yaml>` for build-time policy evaluation
+- **PolicyHandler** in orchestration system for evaluating `PolicyRules` resources during `apply`
+- **SARIF rules** NTHLAYER009 (PolicyRequiredField), NTHLAYER010 (PolicyTierConstraint), NTHLAYER011 (PolicyDependencyRule)
+- 63 new tests across 4 test files
+
+### Quality Promotions
+
+- **No D-grade or F-grade packages remain** — all packages at C or above
+- `domain/` promoted to A-grade (100% coverage, fully documented)
+- `core/`, `db/`, `identity/` promoted from C to B-grade
+- `policies/` enters at B-grade (55 tests)
+- 150+ new tests across promoted packages
+
+### Topology Export
+
+- `nthlayer topology export` command with JSON, Mermaid, and DOT output formats
+- BFS-limited subgraph export with `--depth` and `--demo` flags
+- Nord-themed styling for Mermaid and Graphviz output
+
+### Enhanced Deploy Correlation
+
+- 5-factor weighted scoring for deployment impact analysis (burn_rate, proximity, magnitude, dependency, history)
+- Dependency-aware correlation and deployment blocking
+
+### Service Documentation Generation
+
+- `nthlayer generate-docs` produces README, ADR scaffold, and API docs from manifests
+
+### CLI Smoke Test Harness
+
+- Subprocess-level functional tests in `tests/smoke/`
+- Pre-push hook runs smoke tests automatically
+
+---
+
+## v0.1.0a17 (February 27, 2026)
+
+### Orchestrator Refactor
+
+- **Phased orchestration package** (`orchestration/`) — split monolithic `ServiceOrchestrator` into modular components
+  - `ResourceHandler` protocol and `ResourceRegistry` for pluggable resource types
+  - `ExecutionEngine` for running generation loops with `ResultCollector` aggregation
+  - `PlanBuilder` for previewing generation plans before execution
+  - `ServiceOrchestrator` retained as backward-compatible facade
+
+### Desloppify Code Quality Sweep
+
+- **29 findings resolved** — structured logging enforcement, dead code removal, test coverage gaps
+- Migrated `mock_server.py` to `tests/fixtures/`, added `conftest.py` for shared test config
+- New `test_critical_models.py` and `test_verification.py` test suites
+- Cleaned up demo files, renamed ad-hoc scripts to `try_` prefix
+- Removed duplicate `cli/formatters/models.py`, consolidated SARIF formatter
+
+### Deployment Detection
+
+- **Provider-agnostic webhook handling** via `BaseDeploymentProvider` ABC
+- ArgoCD, GitHub Actions, and GitLab CI/CD webhook parsers
+- `DeploymentProviderRegistry` for self-registering providers
+- HMAC SHA256 signature verification per provider
+- FastAPI webhook endpoint: `POST /webhooks/deployments/{provider_name}`
+
+### Policy Audit Logging
+
+- **Immutable audit trail** for deployment gate decisions
+- Domain models: `PolicyEvaluation`, `PolicyViolation`, `PolicyOverride`
+- `PolicyAuditRecorder` and `PolicyAuditRepository` with fail-open error handling
+- REST API: `POST /policies/{service}/override`, `GET /policies/{service}/audit`
+
+### Harness Engineering Infrastructure
+
+- Test harness and engineering tooling for reliability validation workflows
+
+### Backstage Plugin
+
+- Backstage plugin for NthLayer reliability data integration
+
+### Alert Enhancements
+
+- Grafana dashboard links added to alert rule annotations
+
+### Bug Fixes
+
+- Resolve 10 audit findings across error handling, validation, HTTP client, and metric resolution
+- Lazy AWS imports (`aioboto3`, `boto3`) for CI environments without `[aws]` extras
+- Skip `test_workers_handler.py` and `test_secrets.py` when `aioboto3` is not installed
+- Defer SQS `JobEnqueuer` import to runtime in `api/deps.py`
+
+### CI/CD
+
+- MkDocs GitHub Pages workflow (`.github/workflows/docs.yml`)
+- Lazy optional dependency imports via `__getattr__` pattern
+
+---
+
 ## v0.1.0a16 (February 4, 2026)
 
 ### Intelligent Alerts Pipeline

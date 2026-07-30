@@ -1,263 +1,320 @@
-# NthLayer
+# nthlayer — project front door + ecosystem hub
 
-Reliability at build time, not incident time. Validate production readiness in CI/CD (Generate → Validate → Gate).
+This repo is the **project front door + ecosystem hub**. It hosts the
+GitHub Action, the PyPI meta-package, ecosystem-wide documentation,
+integration test infrastructure, demo materials, and the architectural
+design corpus. **Implementation code does not live here** — it lives
+in the per-tier component repos.
 
-## Quick Reference
+## Stack
 
-- **Language:** Python
-- **Build:** `pip install -e .`
-- **Test:** `make test`
-- **Lint:** `make lint` and `./scripts/lint/run-all.sh` (custom golden-principle linters)
-- **Typecheck:** `make typecheck`
-- **Format:** `make format`
+- Documentation, shell scripts, YAML, and a meta-package
+  `pyproject.toml`. No application code.
+- Bash for `demo/`, `test/`. Python is brought in via `uv run
+  --directory <repo>` against sibling component repos.
 
-## Documentation Map
+## Build / test / lint / run commands
 
-| What | Where |
-|------|-------|
-| Architecture & package layout | `docs/architecture.md` |
-| Coding conventions | `docs/conventions.md` |
-| Golden principles (mechanical rules) | `docs/golden-principles.md` |
-| Testing patterns | `docs/testing.md` |
-| Quality grades by package | `docs/quality.md` |
-| Active specs | `specs/` |
-| Execution plans (spec implementations) | `plans/` |
-| Technical debt backlog | `plans/tech-debt.md` |
+→ See `AGENTS.md` (existing canonical Core Commands section + project
+roadmap + conventions).
 
-Read the specific doc relevant to your task. Do NOT try to load all docs at once.
+## NthLayer at a glance
 
-**MkDocs Documentation Site:**
-- Configuration: `mkdocs.yml`
-- Source docs: `docs-site/`
-- Build output: `site/` (gitignored)
-- Deploy: GitHub Pages at rsionnach.github.io/nthlayer/
+NthLayer is an open-source reliability platform for SREs. It compiles
+service reliability requirements (SLOs, alerts, dashboards, deployment
+gates, dependency graphs) into observable production infrastructure,
+then runs an autonomous reliability runtime that observes, judges,
+correlates, responds, and learns. Built on the
+[OpenSRM specification](https://github.com/rsionnach/opensrm).
 
-## Key Architectural Rules
+The ecosystem spans seven active repositories: one specification
+(`opensrm`), one shared library (`nthlayer-common`), one compiler
+(`nthlayer-generate`), three runtime tiers (`nthlayer-core` /
+`nthlayer-workers` / `nthlayer-bench`), and this front door
+(`nthlayer/`). The marketing site (`nthlayer-site`) is a separate
+concern.
 
-These are enforced by linters and structural tests. See `docs/golden-principles.md` for the full list with rationale.
+NthLayer is in **v1.5 development**. The three-tier architecture
+(core + workers + bench) is being actively built; the six-repo
+consolidation completed 2026-04-26. Production-ready usage today
+centres on `nthlayer-generate` plus the OpenSRM spec; runtime tiers
+are under integration testing for v1.5.
 
-1. Validate inputs at the boundary, not inline
-2. Use shared utilities — do not hand-roll helpers that already exist
-3. Structured logging only — no bare `print()` outside CLI entrypoints
-4. Handle exceptions with context at module boundaries
-5. Use template system for all generated output — no raw string construction
-6. Every `TODO` must reference a Beads issue ID
+## Components
 
-## Task Tracking (Beads)
+Each active component has its own `CLAUDE.md`.
 
-```bash
-bd ready              # Show tasks ready to work on
-bd update <id> --status in_progress
-bd close <id> --reason "What was done"
-bd create --title "..." --description "..." --priority 1 --type feature
-```
+- `nthlayer/` — project front door + ecosystem hub (this repo).
+  Hosts `meta-package/` (PyPI source — `pip install nthlayer`),
+  `action.yml`, `test/`, `demo/`, `docs/`, project documentation. No
+  implementation code.
+- `nthlayer-generate/` — pure deterministic compiler: specs →
+  artifacts (Python, stateless, no runtime).
+- `nthlayer-core/` — Tier 1 reliability-critical HTTP API server:
+  verdict store, case management. CLI: `nthlayer serve`.
+- `nthlayer-workers/` — Tier 2 consolidated runtime process (Apache
+  2.0): five internal modules — observe, measure, correlate, respond,
+  learn. Communicates with core via HTTP API only.
+- `nthlayer-bench/` — Tier 3 Textual TUI operator interface.
+  Communicates with core via HTTP API only.
+- `opensrm/` — OpenSRM specification (no code deps).
+- `nthlayer-common/` — shared library: LLM wrappers, providers,
+  identity resolution, errors, tier definitions, manifest parser,
+  decision records, verdict model.
 
-See `docs/conventions.md` for full Beads workflow.
+Active sibling repo: `nthlayer-override-adapter/` — override-event
+sidecar (opensrm-jmy.7 + jmy.18). Own repo, own release-please, own
+Dockerfile. Console script: `nthlayer-override-adapter serve`.
 
-## Workflow
+Separate concern (not in the active count):
+`nthlayer-site/` — marketing/demo site (HTML/JS, no Python).
 
-- **Task tracking:** Beads (`bd ready`, `bd list`, `bd close`)
-- **Issue creation:** `./scripts/create-audit-issue.sh` for dual Beads + GitHub Issues
-- **Code review:** Automated on every PR via GitHub Action
-- **Codebase audit:** `/audit-codebase`
-- **GC sweep:** `/gc-sweep` (entropy cleanup)
-- **Doc gardening:** `/doc-garden`
-- **Spec to tasks:** `/spec-to-beads <spec-file>`
-- **Release:** Update CHANGELOG.md, create GitHub release → auto-publishes to PyPI
+Deprecated standalone repos (`nthlayer-observe`, `nthlayer-learn`,
+`nthlayer-measure`, `nthlayer-correlate`, `nthlayer-respond`) were
+consolidated into nthlayer-workers 2026-04-26 and removed from local
+disk 2026-05-08 under `opensrm-hty.7` (RM.7). Each has a PyPI
+deprecation release (`v1.0.0`) emitting `DeprecationWarning`; upstream
+GitHub repos remain for historical reference. **Do not reintroduce
+them.**
 
-## Commit Messages
+## What does NOT live here
 
-Format: `<type>: <description> (<bead-id>)`
+Implementation code, build system, deployment artefacts, generator
+examples, generator-specific scripts.
 
-Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `lint`
+| Looking for… | Now lives in… |
+|---|---|
+| Generator code (alerts, dashboards, SLOs, OpenSRM parser) | [`nthlayer-generate`](https://github.com/rsionnach/nthlayer-generate) |
+| Verdict model, manifest parser, LLM wrapper, CoreAPIClient | [`nthlayer-common`](https://github.com/rsionnach/nthlayer-common) |
+| HTTP API, verdict store, case management | [`nthlayer-core`](https://github.com/rsionnach/nthlayer-core) |
+| observe / measure / correlate / respond / learn workers | [`nthlayer-workers`](https://github.com/rsionnach/nthlayer-workers) |
+| Operator TUI (situation board, case bench) | [`nthlayer-bench`](https://github.com/rsionnach/nthlayer-bench) |
+| OpenSRM specification | [`opensrm`](https://github.com/rsionnach/opensrm) |
 
-When fixing a GitHub Issue: `fix: <description> (<bead-id>, closes #<number>)`
+## What this repo hosts
 
-<!-- AUTO-MANAGED: architecture -->
-## Architecture
+- `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `AGENTS.md`,
+  `ATTRIBUTION.md`, `LICENSING_COMPLIANCE.md` — project metadata.
+- `action.yml` — GitHub Action for `uses: rsionnach/nthlayer@<tag>`;
+  delegates to nthlayer-generate at a pinned version.
+- `mkdocs.yml`, `docs-site/`, `documentation/`, `presentations/` —
+  docs site source + design assets.
+- `docs/` — project-level documentation:
+  - `docs/specs/` — current NthLayer specifications.
+  - `docs/roadmap/` — proposed/upcoming feature specs.
+  - `docs/archived-specs/` — superseded/shipped specs preserved as
+    historical record.
+  - `docs/superpowers/` — architectural design docs
+    (`plans/` + `specs/`).
+  - `docs/testing.md`, `docs/COSTOPTIMISATION.md`,
+    `docs/metrics-contract.md` — cross-cutting operational docs.
+  - `docs/integration-testing.md` — five-test-surface harness
+    cross-reference (new under the auto-memory retirement).
+  - `docs/release-runbook.md` — operator runbook for the full
+    ecosystem-wide release pipeline (Phase 5).
+- `test/` — cross-repo integration test infrastructure (see
+  `docs/integration-testing.md`).
+- `demo/` — runnable cascading-failure scenario, `demo.sh`
+  orchestrator, example OpenSRM specifications.
+- `.github/workflows/`:
+  - `docs.yml` — docs site build + GitHub Pages deploy.
+  - `ci.yml` — `bash -n` syntax check across `demo/` and
+    `test/` *.sh (opensrm-0buj).
+  - `demo-paths.yml` — `cmd_start` path-resolution regression test
+    (opensrm-oey5).
+  - `demo-start-lock.yml` — `cmd_start` concurrent-invocation lock
+    regression test (opensrm-36es).
+  - `release.yml` — meta-package release to PyPI (triggered on
+    `meta-v*` tags).
+  - `integration-three-tier.yml` — cross-repo three-tier integration
+    test (`workflow_dispatch` + nightly cron).
+  - `publish-docker.yml` — Docker image publish.
+- `meta-package/` — source for `pip install nthlayer`. Dependency-
+  only; pins core / workers / bench / generate at matching versions.
+- Git tags `v0.1.0a2`–`v0.1.0a20` — preserved; pinned consumers
+  continue to resolve to historical commits.
 
-### Core Modules
-- `orchestrator.py` - Service orchestration: coordinates SLO, alert, dashboard generation from service YAML
-- `dashboards/` - Intent-based dashboard generation with metric resolution
-  - `resolver.py` - MetricResolver: translates intents to Prometheus metrics with fallback chains
-  - `templates/` - Technology-specific intent templates (postgresql, redis, kafka, etc.)
-  - `builder_sdk.py` - Grafana dashboard construction using grafana-foundation-sdk
-- `discovery/` - Metric discovery from Prometheus
-  - `client.py` - MetricDiscoveryClient: queries Prometheus for available metrics
-  - `classifier.py` - Classifies metrics by technology and type
-- `dependencies/` - Dependency discovery and graphing
-  - `discovery.py` - DependencyDiscovery orchestrator
-  - `providers/` - kubernetes, prometheus, consul, etcd, backstage providers
-- `deployments/` - Deployment detection via webhooks
-  - `base.py` - BaseDeploymentProvider ABC and DeploymentEvent model
-  - `registry.py` - Provider registry for webhook routing
-  - `providers/` - argocd, github, gitlab webhook parsers
-  - `errors.py` - DeploymentProviderError exception
-- `drift/` - Reliability drift detection and trend analysis
-  - `analyzer.py` - DriftAnalyzer for SLO trend analysis with configurable windows
-- `providers/` - External service integrations (grafana, prometheus, pagerduty, mimir)
-- `identity/` - Service identity resolution across naming conventions
-- `slos/` - SLO definition, validation, and recording rule generation
-  - `deployment.py` - DeploymentRecorder for storing deployment events
-- `alerts/` - Alert rule generation from dependencies and SLOs
-- `validation/` - Metadata and resource validation
-- `api/` - FastAPI webhook endpoints
-  - `routes/webhooks.py` - Deployment webhook receiver
-- `scripts/lint/` - Custom linters for golden principles
-  - `check-exception-handling.sh` - Enforce exception handling with context
-  - `check-no-orphan-todos.sh` - Enforce TODO tracking via Beads
-  - `check-no-unstructured-logging.sh` - Enforce structured logging
-  - `run-all.sh` - Orchestrator for all lint rules
-- `docs/` - Standalone documentation files (reference material for agents)
-  - `architecture.md` - Architecture details, invariants, release process
-  - `conventions.md` - Coding conventions, Beads workflow, exit codes
-  - `golden-principles.md` - Mechanical enforcement rules with promotion ladder
-  - `testing.md` - Test patterns, commands, coverage by area
-  - `quality.md` - Package quality grades (A-F scale), improvement priorities
-- `docs-site/` - MkDocs documentation site source
-- `plans/` - Execution plan tracking for spec implementations
-  - `README.md` - Plan lifecycle and format documentation
-  - `tech-debt.md` - Technical debt inventory with AUTO-MANAGED section
+## Hard rules
 
-### Data Flow
-1. Service YAML → ServiceOrchestrator → ResourceDetector (indexes by kind)
-2. ResourceDetector determines what to generate (SLOs, alerts, dashboards, etc.)
-3. Dashboard generation: IntentTemplate.get_panel_specs() → MetricResolver.resolve() → Panel objects
-4. Metric resolution: Custom overrides → Discovery → Fallback chain → Guidance
-5. Resource creation: Async providers apply changes (Grafana, PagerDuty, etc.)
-6. Deployment webhooks: Provider parses webhook → DeploymentEvent → DeploymentRecorder → Database
-7. Drift analysis: DriftAnalyzer queries Prometheus for trend analysis → severity assessment (CRITICAL/WARN/OK)
-<!-- /AUTO-MANAGED: architecture -->
+These are load-bearing — wrong-side mistakes break downstream
+consumers, scramble the release pipeline, or pollute the ecosystem
+hub with implementation drift.
 
-<!-- AUTO-MANAGED: learned-patterns -->
-## Learned Patterns
+1. **No application code in this repo.** Implementation lives in the
+   per-tier repos. If a change feels like Python source, you are in
+   the wrong repo. The exception is `meta-package/pyproject.toml`,
+   which is dependency-only (no modules).
 
-### Intent-Based Dashboard Generation
-- Templates extend `IntentBasedTemplate` (from `dashboards/templates/base_intent.py`)
-- Define panels using abstract "intents" instead of hardcoded metric names
-- `get_panel_specs()` returns `List[PanelSpec]` with intent references
-- `MetricResolver` translates intents to actual Prometheus metrics at generation time
-- Resolution waterfall: custom overrides → primary discovery → fallback chain → guidance panels
-- Example: `postgresql.connections` intent resolves to `pg_stat_database_numbackends` or fallback
+2. **`action.yml` consumers are external production CI.** Pin the
+   action's delegated invocation to a specific `nthlayer-generate`
+   tag, **never `main`** — drift in the delegated version is a
+   silent regression for every consumer. The pinning invariant and
+   the option-2 delegation rationale are in
+   `docs/superpowers/specs/2026-04-26-nthlayer-frontdoor-cleanup-proposal.md`.
 
-### Metric Discovery and Resolution
-- `MetricDiscoveryClient` (discovery/client.py) queries Prometheus for available metrics
-- `MetricResolver` (dashboards/resolver.py) resolves intents with fallback chains
-- `discover_for_service(service_name)` populates discovered metrics cache
-- `resolve(intent_name)` returns `ResolutionResult` with status (resolved/fallback/unresolved)
-- Unresolved intents generate guidance panels with exporter installation instructions
-- Supports custom metric overrides from service YAML
+3. **The repo URL and stars are first-class social proof — do not
+   change them.** Consumer pinning lives at this URL. Same applies
+   to legacy tag `v0.1.0a*`: preserved for historical pinning,
+   resolves to historical commits, not updated.
 
-### Async Provider Pattern
-- All providers implement async interface: `async def health_check()`, `async def apply()`
-- Use `asyncio.to_thread()` for sync HTTP clients (httpx.Client) to avoid blocking
-- Dependency providers implement `async def discover(service)` and `async def discover_downstream(service)`
-- DependencyDiscovery orchestrator runs providers in parallel with `asyncio.gather()`
-- Provider errors raise `ProviderError` subclasses, never bare `Exception` or `RuntimeError`
+4. **Tag namespaces are disjoint.**
+   - `v0.1.0a*` — legacy generator releases (historical).
+   - `meta-v*` — PyPI meta-package releases. Triggers `release.yml`.
+   - Sub-package `v*` tags live in their own repos.
 
-### Service Orchestration
-- `ServiceOrchestrator` (orchestrator.py) coordinates resource generation from service YAML
-- `ResourceDetector` builds single-pass index of resources by kind (SLO, Dependencies, etc.)
-- Auto-generates recording rules and Backstage entities when SLOs exist
-- Auto-generates alerts and dashboards when dependencies exist
-- `plan()` returns preview, `apply()` executes generation
+   Do not push a tag in the wrong namespace.
 
-### Deployment Detection Provider Pattern
-- Provider-agnostic webhook handling via `BaseDeploymentProvider` ABC
-- Each provider implements `verify_webhook()` (signature validation) and `parse_webhook()` (payload parsing)
-- Providers return `DeploymentEvent` intermediate model (service, commit_sha, environment, author, etc.)
-- `DeploymentProviderRegistry` maps provider names to implementations
-- Webhook route dispatches based on `/webhooks/deployments/{provider_name}` path parameter
-- `DeploymentRecorder.record_event()` stores events to database for correlation analysis
-- Self-registering providers: import triggers `register_deployment_provider()` at module load
-- Supported providers: ArgoCD (app.sync.succeeded), GitHub Actions (workflow_run.completed), GitLab (Pipeline Hook)
+5. **The workspace root is not a git repo.** The parent dir
+   (`nthlayer-ecosystem/`) hosts sibling clones of every active
+   member plus three local-only convenience files (`pyproject.toml`,
+   `CLAUDE.md`, `README.md`). Never committed. CI and per-repo
+   `uv sync` use each member's own `pyproject.toml` + `uv.lock`. The
+   workspace pyproject is dev-convenience only. Rationale:
+   `opensrm-hty.6` (RM.6).
 
-### Drift Analysis Integration
-- `DriftAnalyzer` (drift/analyzer.py) detects reliability trend degradation
-- Integrated into `portfolio` and `deploy` CLI commands via `--drift` flag
-- Configurable analysis windows (default from tier-specific config)
-- Results include severity (CRITICAL/WARN/OK) and trend direction
-- Tier-based thresholds determine when drift blocks deployments
-- Exit code escalation: drift severity can upgrade warning (1) to critical (2)
-- Portfolio aggregation: drift results included in JSON/CSV/Markdown output
+6. **`docs/superpowers/specs/` and `docs/superpowers/plans/` are
+   load-bearing planning surfaces, not historical notes.** Adding to
+   them is fine; rewriting an existing decision record is not — it
+   destroys the audit trail.
 
-### Golden Principles Enforcement
-- Mechanical rules enforced via custom lint scripts in `scripts/lint/`
-- Promotion ladder: Documentation → Convention Check → Lint → Structural Test
-- Three enforced principles: structured logging, exception handling, TODO tracking
-- `run-all.sh` orchestrator executes all check-*.sh scripts
-- Called from CI and Claude Code hooks
-- Failures block commits with remediation instructions
+## When working in this repo
 
-### Documentation Site (MkDocs)
-- Material theme with dark/light mode toggle, Nord color scheme
-- Navigation: Getting Started → Generate → Validate → Protect → Dependencies → Integrations → Concepts → Reference
-- Mermaid diagram support for architecture visualization
-- Markdown extensions: syntax highlighting, tabbed content, admonitions, emoji
-- Plugins: search, minify
-- Deployed to GitHub Pages at rsionnach.github.io/nthlayer/
-- Source docs in `docs-site/`, built output in `site/` (gitignored)
-- Assets: Custom CSS (stylesheets/nord.css), Mermaid config (javascripts/mermaid-config.js)
+Most changes are documentation, ecosystem specs, or test/demo
+infrastructure. Implementation work goes in the relevant component
+repo (each has its own CLAUDE.md describing its conventions).
 
-### Execution Plan Tracking
-- Plans in `plans/` track spec implementation lifecycle
-- Format: `YYYY-MM-DD-<slug>.md` with metadata, requirements checklist, decision log, deviation log
-- Created by `/spec-to-beads`, updated during implementation
-- Plan status: active → completed → moved to archive
-- Decision log tracks architectural choices that diverge from or clarify specs
-- Deviation log defends against spec drift
-- Technical debt tracked in `plans/tech-debt.md` with AUTO-MANAGED section for audit agents
+- README / CHANGELOG edits — straightforward markdown.
+- Docs site changes — edit `docs-site/`, push, watch `docs.yml`
+  deploy to GitHub Pages.
+- Spec and design doc edits — files under `docs/specs/`,
+  `docs/roadmap/`, `docs/archived-specs/`, `docs/superpowers/`.
+  Update relevant cross-references in CLAUDE.md when shape or
+  location changes.
+- Test/demo infrastructure — `test/integration-three-tier.sh`
+  exercises the three-tier stack; `demo/demo.sh` drives the
+  cascading-failure scenario. See script headers for invocation,
+  `docs/integration-testing.md` for the cross-reference, and
+  `docs/superpowers/specs/` for design rationale.
 
-### Quality Grading System
-- Package quality grades (A-F) based on test coverage, docs, error handling, API stability
-- Grade criteria: A (>80% coverage), B (>60%), C (>40%), D (<40%), F (untested)
-- Tracked in `docs/quality.md` with AUTO-MANAGED sections for grades and history
-- Packages with D/F grades should have active Beads issues for improvement
-- Run `/audit-codebase` to identify specific gaps
-<!-- /AUTO-MANAGED: learned-patterns -->
+## PyPI meta-package
 
-<!-- AUTO-MANAGED: discovered-conventions -->
-## Discovered Conventions
+`meta-package/` is the authoritative source for
+`pip install nthlayer`:
 
-### Error Handling
-- Always raise `ProviderError` or `NthLayerError` subclasses for application errors
-- Never use bare `Exception` or `RuntimeError` in application code
-- Provider modules define their own error subclasses: `GrafanaProviderError(ProviderError)`
-- Import errors from `nthlayer.core.errors`
+- **Purpose:** friendly entry point for evaluators, demos, and local
+  dev. For production, install individual tiers.
+- **Content:** dependency-only (`packages = []`); no Python modules,
+  no console scripts.
+- **Pinning:** each release pins all four sub-packages at explicit
+  versions; they are not guaranteed to match. `nthlayer-generate`
+  follows its own versioning baseline (currently `==1.1.0`);
+  `nthlayer-core`, `nthlayer-workers`, and `nthlayer-bench` are
+  aligned (currently `==1.6.0`). `nthlayer-common` is a transitive
+  dep.
+- **Tag namespace:** `meta-v*` (e.g. `meta-v1.0.0`). Separate from
+  legacy `v0.1.0a*` and from sub-package tags.
+- **First release:** `meta-v1.0.0` — published;
+  `pip install nthlayer==1.0.0` resolves the full ecosystem closure.
+- **Workflow:** `.github/workflows/release.yml` (triggered on
+  `meta-v*` push + `workflow_dispatch`). Trusted publishing.
 
-### Dashboard Template Architecture
-- Templates live in `src/nthlayer/dashboards/templates/`
-- Technology-specific templates: `{technology}_intent.py` (e.g., `postgresql_intent.py`, `redis_intent.py`)
-- All intent templates extend `IntentBasedTemplate` base class
-- Base class implements `get_panels()` which calls template's `get_panel_specs()`
-- Never construct raw JSON dashboards - always use `grafana-foundation-sdk` and intent templates
+## CI / Release pipeline
 
-### Dependency Discovery
-- Provider implementations in `src/nthlayer/dependencies/providers/`
-- Each provider extends `BaseDepProvider` with async `discover()` and `discover_downstream()`
-- Providers: kubernetes, prometheus, consul, etcd, zookeeper, backstage
-- `DependencyDiscovery` (dependencies/discovery.py) orchestrates multiple providers
-- Uses `IdentityResolver` to normalize service names across providers
+The nthlayer front-door repo uses `googleapis/release-please-action@v4`
+for the meta-package. Config: `release-please-config.json` (package
+type `python`, component `meta`, package path `meta-package/`) +
+`.release-please-manifest.json` (version anchor at `meta-package/`).
+Tags follow `meta-v*` (e.g. `meta-v1.0.0`), kept separate from the
+legacy `v0.1.0a*` generator tags and from sub-package tags. Commit
+taxonomy: `feat` / `fix` / `perf` / `deps` / `docs` surface in the
+changelog; `chore` / `test` / `ci` / `build` / `style` / `refactor`
+are hidden (refactor also hidden here, unlike the library repos).
 
-### Deployment Detection
-- Deployment providers in `src/nthlayer/deployments/providers/`
-- Each provider extends `BaseDeploymentProvider` with `verify_webhook()` and `parse_webhook()`
-- Providers: argocd, github, gitlab
-- `DeploymentProviderRegistry` (deployments/registry.py) manages provider registration
-- Webhook signature verification via HMAC SHA256 (X-Hub-Signature-256, X-Argo-Signature headers)
-- FastAPI webhook endpoint: `POST /webhooks/deployments/{provider_name}`
-- Response codes: 201 (recorded), 204 (skipped), 401 (invalid signature), 404 (unknown provider)
+**No smoke gate.** The meta-package is dependency-only
+(`packages = []`, no Python modules, no console scripts). Nothing to
+smoke-test at install time — the gate pattern used by the four library
+repos does not apply here. `release.yml` goes straight from
+`twine check` to PyPI trusted-publishing.
 
-### Async/Await Usage
-- All provider operations are async (health checks, resource creation, discovery)
-- Use `asyncio.to_thread()` for sync HTTP operations to avoid blocking event loop
-- Parallel operations use `asyncio.gather()` with `return_exceptions=True`
-- Provider interfaces define `async def aclose()` for cleanup
+**Dependabot** (`.github/dependabot.yml`): declares the `uv` ecosystem
+pointing at `/meta-package` (where `pyproject.toml` and `uv.lock`
+live) on a Monday-morning Europe/Dublin schedule. Sibling `nthlayer-*`
+packages grouped into a single weekly PR. **No `github-actions`
+ecosystem entry** for the front-door workflows because those workflows
+pin to `main` by convention. Auto-merge policy in
+`.github/workflows/dependabot-automerge.yml`: external patch and dev
+patch/minor auto-merge; sibling packages and any major bump require
+review.
 
-### CLI Drift Analysis
-- `nthlayer portfolio --drift` includes trend analysis for all services
-- `nthlayer check-deploy --include-drift` checks deployment gate with drift detection
-- Drift window configurable via `--drift-window` (e.g., "30d")
-- Results displayed in table/JSON/CSV/markdown formats
-- Exit code escalation: CRITICAL drift → exit 2, WARN → exit 1
-<!-- /AUTO-MANAGED: discovered-conventions -->
+`release-please.yml` mints a short-lived GitHub App token
+(`actions/create-github-app-token@v3`, App `nthlayer-release-bot`,
+secrets `RELEASE_APP_ID` / `RELEASE_APP_PRIVATE_KEY`) and passes it to
+`release-please-action@v4` as `token:`, so release PRs are authored by
+the App identity rather than `GITHUB_TOKEN`. This makes PR CI run
+ungated and lets the `meta-v*` release tag auto-fire `release.yml` — it
+retires the former manual `GITHUB_TOKEN` cascade-block workaround
+(opensrm-l58r / lt91). NOTE: `release.yml` here is single-trigger
+(`push: tags: meta-v*` + `workflow_dispatch`), so the l58r
+double-trigger dedup does **not** apply.
+
+For the full cross-repo release procedure — coordinating per-library
+release-please runs, bumping the meta-package pins, and post-release
+PyPI verification — see `docs/release-runbook.md` (added Phase 5).
+
+## Spec + planning references (canonical entry points)
+
+Architectural design docs live under `docs/superpowers/`. The
+following are the load-bearing references; the full list is in
+`docs/superpowers/specs/` and `docs/superpowers/plans/`.
+
+- Three-tier architecture decision:
+  `docs/superpowers/specs/2026-04-21-spec-revision-summary.md`.
+- Six-repo consolidation rationale:
+  `docs/superpowers/specs/2026-04-21-repo-consolidation-recommendation.md`.
+- Front-door cleanup proposal:
+  `docs/superpowers/specs/2026-04-26-nthlayer-frontdoor-cleanup-proposal.md`.
+- v1.5 epic plan:
+  `docs/superpowers/plans/2026-04-21-nthlayer-v1.5-epic-tree.md`.
+- Phase 0 decisions ratified:
+  `docs/superpowers/plans/2026-04-21-phase-0-decisions.md`.
+- V2 reconciliation report:
+  `docs/superpowers/specs/2026-04-20-v2-reconciliation-report.md`.
+- Core API security audit (P4-SEC.1):
+  `docs/superpowers/specs/2026-05-06-core-api-security-audit.md`.
+- Dependency security audit (P4-SEC.3):
+  `docs/superpowers/specs/2026-05-06-dependency-security-audit.md`.
+- Override Adapter Sidecar design + plan (opensrm-jmy.7):
+  `docs/superpowers/specs/2026-05-15-jmy7-override-adapter-sidecar-design.md`
+  + `docs/superpowers/plans/2026-05-15-jmy7-override-adapter-sidecar.md`.
+- Override Verdict-Binding Path design + plan (opensrm-jmy.18):
+  `docs/superpowers/specs/2026-05-20-jmy18-override-verdict-binding-design.md`
+  + `docs/superpowers/plans/2026-05-20-jmy18-override-verdict-binding.md`.
+
+OpenSRM specification (the format itself) lives in
+[`opensrm`](https://github.com/rsionnach/opensrm).
+
+## v1.5 vs v2 boundary (summary)
+
+| Capability | v1.5 | v2 |
+|-----------|------|-----|
+| Verdict identity | String IDs (`vrd-...`) | IPLD CIDv1 (canonical CBOR) |
+| Verdict encoding | JSON TEXT | Canonical CBOR BLOB |
+| Tamper evidence | Hash chain (nthlayer-common/records) | Rekor daily Merkle root anchoring |
+| Correlation engine | asyncio session windows | Bytewax dataflow (optional) |
+| Authorisation | Respond owns execution (safe-actions) | authorise + executor in core (Regorus, Biscuit) |
+| LLM wrapper | `llm_call()` + Instructor additive | `LLM` class refactor |
+| Bench delivery | Local terminal only | textual-serve SaaS |
+
+Per-spec reconciliation in
+`docs/superpowers/specs/2026-04-20-v2-reconciliation-report.md`.
+
+## Where to find detail
+
+- Integration testing harness, demo.sh guards, three-tier boot
+  sequence: `docs/integration-testing.md`.
+- AGENTS.md (long form): project vision, roadmap, project layout,
+  development patterns, git workflow, beads integration.
+- Per-component CLAUDE.md files describe each component's conventions.
+- Project memory / Rob's preferences across sessions:
+  `~/.claude/projects/-Users-robfox-Documents-GitHub-nthlayer-ecosystem/memory/MEMORY.md`.
+- Beads: `cd opensrm && bd ready --json`.
